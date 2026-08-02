@@ -362,9 +362,9 @@ header {
 
 .panel-puntuacion { width: 220px; }
 
-/* Oponentes y Cementerio lado a lado (dos columnas) dentro del panel izquierdo */
-.panel-izquierdo-doble { width: 320px; flex-direction: row; }
-.panel-izquierdo-doble .seccion-scroll { flex: 1 1 50%; min-width: 0; }
+/* Oponentes y Cementerio apilados verticalmente dentro del panel izquierdo (como en la versión anterior) */
+.panel-izquierdo-doble { width: 260px; flex-direction: column; }
+.panel-izquierdo-doble .seccion-scroll { flex: 1; min-width: 0; }
 
 .seccion-scroll { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .seccion-scroll h3 { 

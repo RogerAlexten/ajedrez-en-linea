@@ -1015,6 +1015,23 @@
 <body class="theme-battlecats">
 
 <!-- ============================================================
+     PANTALLA DE PRECARGA (recursos + verificación de sesión)
+     Cubre todo hasta que termine de cargar imágenes/gifs/sonidos/música
+     y se confirme que hay una sesión iniciada.
+     ============================================================ -->
+<div id="preload-overlay-bc" style="position:fixed; inset:0; z-index:999999; background:#0a0a0f; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.4s ease; font-family:inherit;">
+  <img src="icono_gato_loading.png" onerror="this.style.display='none'" style="width:72px; height:72px; margin-bottom:18px; animation:preloadPulseBC 1s ease-in-out infinite;">
+  <p style="color:#ffc107; font-weight:900; font-size:16px; letter-spacing:1px; margin-bottom:14px;">CARGANDO BATTLE CATS CHESS...</p>
+  <div style="width:260px; max-width:70vw; height:14px; background:#222; border:2px solid #ffc107; border-radius:8px; overflow:hidden;">
+    <div id="preload-bar-fill-bc" style="width:0%; height:100%; background:linear-gradient(90deg,#ffc107,#ff8f00); transition:width 0.2s ease;"></div>
+  </div>
+  <p id="preload-porcentaje-bc" style="color:#ddd; font-size:12px; margin-top:10px; font-weight:bold;">0%</p>
+</div>
+<style>
+  @keyframes preloadPulseBC { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.08); opacity:0.85; } }
+</style>
+
+<!-- ============================================================
      ESCENARIO PRINCIPAL DEL LOBBY
      ============================================================ -->
 <div id="lobby-viewport">
@@ -2730,16 +2747,123 @@
       return esModoDobleRecompensa() ? 150 : 100;
     }
 
+    /* ============================================================
+       SISTEMA DE PRECARGA DE RECURSOS (imágenes, gifs, sonidos, música)
+       Recorre el propio HTML/JS buscando cualquier archivo de imagen o
+       audio referenciado y lo precarga en memoria ANTES de dejar jugar,
+       para evitar retrasos de animación con internet lento.
+       ============================================================ */
+    function extraerListaAssetsBC() {
+      const encontrados = new Set();
+      try {
+        const html = document.documentElement.outerHTML;
+        const regex = /["']([^"'<>\s]+\.(?:png|jpe?g|gif|webp|mp3|wav|ogg|mp4))["']/gi;
+        let m;
+        while ((m = regex.exec(html)) !== null) {
+          let ruta = m[1].trim();
+          if (!ruta || ruta.startsWith('http') || ruta.startsWith('data:')) continue;
+          encontrados.add(ruta);
+        }
+      } catch (eScanHtml) { console.log('No se pudo escanear el HTML para precarga:', eScanHtml); }
+
+      // Refuerzo: recorrer el roster completo de personajes por si algún nombre se arma dinámicamente
+      try {
+        ['w', 'b'].forEach(color => {
+          for (let tipo in BATTLE_CATS_ROSTER[color]) {
+            BATTLE_CATS_ROSTER[color][tipo].forEach((char, idx) => {
+              const img = char.image || (typeof getArchivoPiezaModal === 'function' ? getArchivoPiezaModal(tipo, color, idx) : null);
+              if (img) encontrados.add(img);
+            });
+          }
+        });
+      } catch (eRoster) { console.log('No se pudo recolectar imágenes del roster para precarga:', eRoster); }
+
+      // Refuerzo: pistas de música de fondo, que se arman dinámicamente como `${pista}.mp3` / `${pista}2.mp3`
+      try {
+        const pistasBase = ['facil', 'medio', 'dificil', 'tutorial', 'crazedboss', 'crazedbossdos', 'extrema', 'custom', 'pruebas'];
+        pistasBase.forEach((p) => { encontrados.add(`${p}.mp3`); encontrados.add(`${p}2.mp3`); });
+      } catch (ePistas) { console.log('No se pudo agregar las pistas de música para precarga:', ePistas); }
+
+      return Array.from(encontrados);
+    }
+
+    function actualizarBarraPrecargaBC(cargados, total) {
+      const pct = total > 0 ? Math.round((cargados / total) * 100) : 100;
+      const barra = document.getElementById('preload-bar-fill-bc');
+      const texto = document.getElementById('preload-porcentaje-bc');
+      if (barra) barra.style.width = pct + '%';
+      if (texto) texto.innerText = `${pct}% (${cargados}/${total})`;
+    }
+
+    function precargarRecursosBC() {
+      return new Promise((resolve) => {
+        const lista = extraerListaAssetsBC();
+        const total = lista.length;
+        if (total === 0) { actualizarBarraPrecargaBC(1, 1); resolve(); return; }
+
+        let cargados = 0, resuelto = false;
+        function marcarUno() {
+          cargados++;
+          actualizarBarraPrecargaBC(cargados, total);
+          if (cargados >= total && !resuelto) { resuelto = true; resolve(); }
+        }
+
+        lista.forEach((ruta) => {
+          let yaContado = false;
+          function marcarUnaVez() { if (yaContado) return; yaContado = true; marcarUno(); }
+
+          if (/\.(mp3|wav|ogg|mp4)$/i.test(ruta)) {
+            const a = new Audio();
+            a.preload = 'auto';
+            a.oncanplaythrough = marcarUnaVez;
+            a.onloadeddata = marcarUnaVez; // se resuelve más rápido que canplaythrough en conexiones lentas
+            a.onerror = marcarUnaVez;
+            a.src = ruta;
+            try { a.load(); } catch (eLoadAudio) { marcarUnaVez(); }
+          } else {
+            const img = new Image();
+            img.onload = marcarUnaVez;
+            img.onerror = marcarUnaVez;
+            img.src = ruta;
+          }
+
+          // Salvavidas por archivo: si uno solo se cuelga (ej. música opcional inexistente), no debe frenar a los demás
+          setTimeout(marcarUnaVez, 8000);
+        });
+
+        // Salvavidas general: nunca bloquear el juego más de 20s en total
+        setTimeout(() => { if (!resuelto) { resuelto = true; resolve(); } }, 20000);
+      });
+    }
+
+    function ocultarPantallaPrecargaBC() {
+      const overlay = document.getElementById('preload-overlay-bc');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 400);
+      }
+    }
+
+    function mostrarMensajeRequiereCuentaBC() {
+      const overlay = document.getElementById('preload-overlay-bc');
+      if (!overlay) { window.location.href = 'index.html'; return; }
+      overlay.innerHTML = `
+        <div style="text-align:center; padding: 20px; max-width: 80vw;">
+          <p style="color:#ff5555; font-size: 18px; font-weight:900; margin-bottom: 14px;">NECESITAS UNA CUENTA PARA JUGAR ESTE MODO</p>
+          <p style="color:#ddd; font-size: 14px;">Serás redirigido para iniciar sesión...</p>
+        </div>`;
+      setTimeout(() => { window.location.href = 'index.html'; }, 1800);
+    }
+
     window.onload = async () => {
+        // La precarga de recursos arranca de inmediato, en paralelo con la verificación de sesión
+        const listoAssets = precargarRecursosBC();
+
         await esperarFirebaseBC();
         const { onAuthStateChanged, doc, getDoc } = window.fb;
 
         onAuthStateChanged(window.firebaseAuth, async (user) => {
-            if (!user) {
-                alert('Necesitas una cuenta para jugar este modo. Serás redirigido para iniciar sesión.');
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!user) { mostrarMensajeRequiereCuentaBC(); return; }
 
             usuarioActivoUid = user.uid;
             let snap = await getDoc(doc(window.firebaseDb, 'usuarios', user.uid));
@@ -2758,6 +2882,9 @@
             actualizarTablero();
             actualizarVistaModalDeck();
             document.getElementById('modal-reglas-bc').classList.add('oculto');
+
+            await listoAssets; // espera a que terminen de precargarse imágenes/gifs/sonidos/música
+            ocultarPantallaPrecargaBC();
         });
     };
 
