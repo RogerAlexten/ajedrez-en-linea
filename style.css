@@ -335,10 +335,15 @@ header {
 }
 
 /* CONTENEDOR PRINCIPAL Y PANELES */
-.main-wrapper { display: flex; justify-content: center; align-items: flex-start; gap: 20px; width: 100%; max-width: 1200px; padding: 0 20px; }
+.main-wrapper { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px; width: 100%; max-width: 1560px; padding: 0 20px; }
+
+/* Agrupa el panel de Temas/Historial junto con la guía de piezas para que
+   siempre viajen juntos como un solo bloque (ya no usa position:absolute,
+   así que nunca se separan ni se van a otra fila por accidente). */
+.panel-derecho-grupo { display: flex; align-items: flex-start; gap: 14px; flex-shrink: 0; }
 
 .panel { 
-  width: 300px; 
+  width: 260px; 
   height: 85vh; 
   background-color: var(--bg-dark); 
   background-image: var(--bg-panel-img, none); 
@@ -354,6 +359,12 @@ header {
   border: 2px solid var(--borde); 
   transition: 0.3s; 
 }
+
+.panel-puntuacion { width: 220px; }
+
+/* Oponentes y Cementerio lado a lado (dos columnas) dentro del panel izquierdo */
+.panel-izquierdo-doble { width: 320px; flex-direction: row; }
+.panel-izquierdo-doble .seccion-scroll { flex: 1 1 50%; min-width: 0; }
 
 .seccion-scroll { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .seccion-scroll h3 { 
@@ -504,7 +515,7 @@ header {
 .texto-destacado-empate { color: #17a2b8; font-weight: bold; font-size: 16px; margin: 10px 0; text-align: center; }
 
 /* TABLERO */
-.content { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; }
+.content { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; }
 .tablero { display: flex; position: relative; width: 100%; aspect-ratio: 1/1; margin-bottom: 15px; box-shadow: var(--sombra-tablero); border-radius: 10px; background-color: transparent; background-image: var(--img-tablero); background-size: 100% 100%; }
 
 /* BADGE DE EVENTO (ACCESO A BATTLE CATS) JUNTO AL TÍTULO DE TEMAS VISUALES */
@@ -666,14 +677,13 @@ button { padding: 10px 15px; font-size: 14px; border: none; border-radius: 5px; 
 }
 
 #guia-flotante-derecha {
-    position: absolute;
-    left: 105%; 
-    top: 5%; 
     display: flex;
-    flex-direction: column; 
-    gap: 10px; 
-    pointer-events: none; 
-    width: 130px; 
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    width: 92px;
+    flex-shrink: 0;
+    padding-top: 4px;
 }
 
 .guia-item-transparente {
@@ -696,7 +706,7 @@ button { padding: 10px 15px; font-size: 14px; border: none; border-radius: 5px; 
 }
 
 .guia-imgs-transparente img {
-    height: 35px;
+    height: 30px;
     object-fit: contain;
     filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5)); 
 }

@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ajedrez En Linea</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+
+  <!-- ===== FIREBASE (Autenticación + Base de datos) ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+      signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, increment,
+      collection, query, where, orderBy, limit, getDocs, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBA2bKVsxeYTdcYeMo_foOEcoZfcy46k7o",
+      authDomain: "ajedrez-en-linea-59b9f.firebaseapp.com",
+      projectId: "ajedrez-en-linea-59b9f",
+      storageBucket: "ajedrez-en-linea-59b9f.firebasestorage.app",
+      messagingSenderId: "785622879670",
+      appId: "1:785622879670:web:a956a54350c314da99c517",
+      measurementId: "G-HSN7C4VHPF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.firebaseAuth = getAuth(app);
+    window.firebaseDb = getFirestore(app);
+    window.fb = {
+      createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+      doc, getDoc, setDoc, updateDoc, increment, collection, query, where, orderBy, limit, getDocs, serverTimestamp
+    };
+    window.dispatchEvent(new Event('firebase-listo'));
+  </script>
 </head>
 <body class="theme-default">
 
@@ -97,19 +129,9 @@
   </div>
 
   <div class="main-wrapper">
-    
-    <!-- PANEL IZQUIERDO -->
-    <div class="panel">
-      <div class="seccion-scroll">
-        <h3>Oponentes</h3>
-        <div class="lista-scroll" id="lista-bots"></div>
-      </div>
-      
-      <div class="seccion-scroll" style="flex: 0 0 110px;">
-        <h3>Cementerio</h3>
-        <div id="cementerio" class="lista-scroll cementerio-grid"></div>
-      </div>
 
+    <!-- PANEL DE PUNTUACIÓN (al lado del panel de Oponentes) -->
+    <div class="panel panel-puntuacion">
       <div class="seccion-scroll" id="caja-puntuaciones">
         <h3>🏆 Puntuación</h3>
         <div class="lista-scroll">
@@ -128,6 +150,19 @@
       </div>
     </div>
 
+    <!-- PANEL IZQUIERDO -->
+    <div class="panel panel-izquierdo-doble">
+      <div class="seccion-scroll">
+        <h3>Oponentes</h3>
+        <div class="lista-scroll" id="lista-bots"></div>
+      </div>
+      
+      <div class="seccion-scroll">
+        <h3>Cementerio</h3>
+        <div id="cementerio" class="lista-scroll cementerio-grid"></div>
+      </div>
+    </div>
+
     <!-- CENTRO: TABLERO Y CONTROLES -->
     <div class="content">
       <div class="tablero">
@@ -141,27 +176,31 @@
       </div>
     </div>
 
-    <!-- PANEL DERECHO CON GUÍA FLOTANTE A SU LADO -->
-    <div class="panel" style="position: relative;">
-      
-      <!-- Temas -->
-      <div class="seccion-scroll" style="flex: 0 0 40%;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <h3 style="margin-bottom:0; flex:1;">Temas Visuales</h3>
-          <div id="boton-evento-bc" onclick="aplicarTema('battlecats')">
-            <div id="boton-evento-bc-circulo">
-              <img src="Kasli_torre.gif" alt="Evento Battle Cats">
-            </div>
-            <span>EVENTO</span>
-          </div>
-        </div>
-        <div class="lista-scroll" id="lista-temas"></div>
-      </div>
+    <!-- PANEL DERECHO + GUÍA FLOTANTE A SU LADO -->
+    <div class="panel-derecho-grupo">
 
-      <!-- Historial -->
-      <div class="seccion-scroll" style="flex: 1 1 auto;">
-        <h3>Registro de Jugadas</h3>
-        <div class="lista-scroll" id="historial"></div>
+      <div class="panel">
+
+        <!-- Temas -->
+        <div class="seccion-scroll" style="flex: 0 0 40%;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h3 style="margin-bottom:0; flex:1;">Temas Visuales</h3>
+            <div id="boton-evento-bc" onclick="aplicarTema('battlecats')">
+              <div id="boton-evento-bc-circulo">
+                <img src="Kasli_torre.gif" alt="Evento Battle Cats">
+              </div>
+              <span>EVENTO</span>
+            </div>
+          </div>
+          <div class="lista-scroll" id="lista-temas"></div>
+        </div>
+
+        <!-- Historial -->
+        <div class="seccion-scroll" style="flex: 1 1 auto;">
+          <h3>Registro de Jugadas</h3>
+          <div class="lista-scroll" id="historial"></div>
+        </div>
+
       </div>
 
       <!-- GUÍA INTEGRADA AL ESCENARIO (Cajas individuales) -->
@@ -268,26 +307,57 @@
         renderTemas();
         renderGuiaPiezas(); 
         dibujarTableroVacio();
-        verificarSesion();
+        iniciarEscuchaSesion();
     };
 
-    /* ===== SESIÓN (LOGIN / REGISTRO) ===== */
-    function obtenerUsuarios() {
-        return JSON.parse(localStorage.getItem('bc_usuarios') || '{}');
+    /* ===== SESIÓN CON FIREBASE (AUTH + FIRESTORE) ===== */
+    let usuarioActual = null; // { uid, usuario }
+
+    // Firebase Authentication necesita un correo; generamos uno interno
+    // a partir del nombre de usuario para mantener el registro solo con usuario/contraseña.
+    function usuarioAEmail(usuario) {
+        return usuario.trim().toLowerCase().replace(/\s+/g, '_') + '@ajedrezenlinea.app';
     }
 
-    function verificarSesion() {
-        let usuarioActivo = localStorage.getItem('bc_sesion_usuario');
-        if (usuarioActivo) {
-            document.getElementById('modal-login').classList.add('oculto');
-            document.getElementById('modal-inicio').classList.remove('oculto');
-            document.getElementById('caja-sesion-usuario').classList.remove('oculto');
-            document.getElementById('texto-usuario-actual').innerText = usuarioActivo;
-            cargarPuntuaciones();
-        } else {
-            document.getElementById('modal-login').classList.remove('oculto');
-            document.getElementById('modal-inicio').classList.add('oculto');
-        }
+    function esperarFirebase() {
+        return new Promise((resolve) => {
+            if (window.fb && window.firebaseAuth) { resolve(); return; }
+            window.addEventListener('firebase-listo', () => resolve(), { once: true });
+        });
+    }
+
+    function traducirErrorFirebase(e) {
+        if (e.code === 'auth/email-already-in-use') return 'Ese usuario ya existe.';
+        if (e.code === 'auth/weak-password') return 'La contraseña debe tener al menos 6 caracteres.';
+        if (e.code === 'auth/invalid-email') return 'Nombre de usuario no válido.';
+        if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') return 'Usuario o contraseña incorrectos.';
+        if (e.code === 'permission-denied') return 'Sin permisos en la base de datos. Revisa las reglas de seguridad de Firestore.';
+        return 'Ocurrió un error. Intenta de nuevo.';
+    }
+
+    async function iniciarEscuchaSesion() {
+        await esperarFirebase();
+        const { onAuthStateChanged, doc, getDoc } = window.fb;
+        onAuthStateChanged(window.firebaseAuth, async (user) => {
+            if (user) {
+                let snap = await getDoc(doc(window.firebaseDb, 'usuarios', user.uid));
+                let datos = snap.exists() ? snap.data() : { usuario: user.email.split('@')[0], puntuacionAjedrez: 0, puntuacionBattlecats: 0 };
+                usuarioActual = { uid: user.uid, usuario: datos.usuario };
+
+                document.getElementById('modal-login').classList.add('oculto');
+                document.getElementById('modal-inicio').classList.remove('oculto');
+                document.getElementById('caja-sesion-usuario').classList.remove('oculto');
+                document.getElementById('texto-usuario-actual').innerText = datos.usuario;
+
+                scoreAjedrez = datos.puntuacionAjedrez || 0;
+                renderPuntuaciones();
+            } else {
+                usuarioActual = null;
+                document.getElementById('modal-login').classList.remove('oculto');
+                document.getElementById('modal-inicio').classList.add('oculto');
+                document.getElementById('caja-sesion-usuario').classList.add('oculto');
+            }
+        });
     }
 
     /* ===== SISTEMA DE PUNTUACIÓN (AJEDREZ CLÁSICO + BATTLE CATS) ===== */
@@ -297,43 +367,33 @@
 
     let scoreAjedrez = 0;
 
-    function obtenerRanking(clave) {
-        return JSON.parse(localStorage.getItem(clave) || '{}');
-    }
-
-    function guardarPuntuacion(clave, usuario, puntos) {
-        let ranking = obtenerRanking(clave);
-        ranking[usuario] = puntos;
-        localStorage.setItem(clave, JSON.stringify(ranking));
-    }
-
-    function obtenerTop10(clave) {
-        let ranking = obtenerRanking(clave);
-        return Object.entries(ranking)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-    }
-
-    function cargarPuntuaciones() {
-        let usuario = localStorage.getItem('bc_sesion_usuario');
-        if (!usuario) return;
-        scoreAjedrez = obtenerRanking('ranking_ajedrez')[usuario] || 0;
-        renderPuntuaciones();
-    }
-
-    function sumarPuntosAjedrez(pts) {
-        let usuario = localStorage.getItem('bc_sesion_usuario');
-        if (!usuario || !pts) return;
+    async function sumarPuntosAjedrez(pts) {
+        if (!usuarioActual || !pts) return;
         scoreAjedrez += pts;
-        guardarPuntuacion('ranking_ajedrez', usuario, scoreAjedrez);
         renderPuntuaciones();
+        try {
+            const { doc, updateDoc, increment } = window.fb;
+            await updateDoc(doc(window.firebaseDb, 'usuarios', usuarioActual.uid), { puntuacionAjedrez: increment(pts) });
+        } catch (e) { console.log('No se pudo guardar el puntaje de ajedrez:', e); }
     }
 
-    function renderFilasRanking(lista, usuarioActual) {
+    async function obtenerTop10(campo) {
+        try {
+            const { collection, query, orderBy, limit, getDocs } = window.fb;
+            let q = query(collection(window.firebaseDb, 'usuarios'), orderBy(campo, 'desc'), limit(10));
+            let snap = await getDocs(q);
+            return snap.docs.map(d => [d.data().usuario, d.data()[campo] || 0]);
+        } catch (e) {
+            console.log('No se pudo cargar el ranking:', e);
+            return [];
+        }
+    }
+
+    function renderFilasRanking(lista, usuarioActualNombre) {
         if (lista.length === 0) return '<p class="sin-puntuaciones">Aún no hay puntuaciones registradas.</p>';
         let html = '';
         lista.forEach(([nombre, puntos], i) => {
-            let clase = 'fila-ranking' + (nombre === usuarioActual ? ' fila-ranking-propia' : '');
+            let clase = 'fila-ranking' + (nombre === usuarioActualNombre ? ' fila-ranking-propia' : '');
             html += `<div class="${clase}">
                 <span class="fila-ranking-pos">${i + 1}</span>
                 <span class="fila-ranking-nombre">${nombre}</span>
@@ -343,15 +403,24 @@
         return html;
     }
 
-    function renderPuntuaciones() {
-        let usuario = localStorage.getItem('bc_sesion_usuario') || '';
+    async function renderPuntuaciones() {
+        let nombre = usuarioActual ? usuarioActual.usuario : '';
 
         document.getElementById('mi-puntaje-ajedrez').innerText = scoreAjedrez;
-        document.getElementById('top10-ajedrez').innerHTML = renderFilasRanking(obtenerTop10('ranking_ajedrez'), usuario);
+        let top10Aj = await obtenerTop10('puntuacionAjedrez');
+        document.getElementById('top10-ajedrez').innerHTML = renderFilasRanking(top10Aj, nombre);
 
-        let puntajeBC = obtenerRanking('ranking_battlecats')[usuario] || 0;
-        document.getElementById('mi-puntaje-bc').innerText = puntajeBC;
-        document.getElementById('top10-bc').innerHTML = renderFilasRanking(obtenerTop10('ranking_battlecats'), usuario);
+        let miPuntajeBC = 0;
+        if (usuarioActual) {
+            try {
+                const { doc, getDoc } = window.fb;
+                let snap = await getDoc(doc(window.firebaseDb, 'usuarios', usuarioActual.uid));
+                if (snap.exists()) miPuntajeBC = snap.data().puntuacionBattlecats || 0;
+            } catch (e) { console.log('No se pudo cargar el puntaje de Battle Cats:', e); }
+        }
+        document.getElementById('mi-puntaje-bc').innerText = miPuntajeBC;
+        let top10BC = await obtenerTop10('puntuacionBattlecats');
+        document.getElementById('top10-bc').innerHTML = renderFilasRanking(top10BC, nombre);
     }
 
     function mostrarFormRegistro() {
@@ -364,45 +433,67 @@
         document.getElementById('form-login').classList.remove('oculto');
     }
 
-    function registrarUsuario() {
+    async function registrarUsuario() {
         let usuario = document.getElementById('registro-usuario').value.trim();
         let clave = document.getElementById('registro-clave').value;
         let clave2 = document.getElementById('registro-clave2').value;
         let errorBox = document.getElementById('registro-error');
+        errorBox.classList.add('oculto');
 
         if (!usuario || !clave) { errorBox.innerText = 'Completa usuario y contraseña.'; errorBox.classList.remove('oculto'); return; }
         if (clave !== clave2) { errorBox.innerText = 'Las contraseñas no coinciden.'; errorBox.classList.remove('oculto'); return; }
+        if (clave.length < 6) { errorBox.innerText = 'La contraseña debe tener al menos 6 caracteres.'; errorBox.classList.remove('oculto'); return; }
 
-        let usuarios = obtenerUsuarios();
-        if (usuarios[usuario]) { errorBox.innerText = 'Ese usuario ya existe.'; errorBox.classList.remove('oculto'); return; }
+        await esperarFirebase();
+        const { createUserWithEmailAndPassword, doc, setDoc, serverTimestamp } = window.fb;
 
-        usuarios[usuario] = clave;
-        localStorage.setItem('bc_usuarios', JSON.stringify(usuarios));
-        localStorage.setItem('bc_sesion_usuario', usuario);
-        errorBox.classList.add('oculto');
-        verificarSesion();
+        try {
+            let usuarioLower = usuario.toLowerCase();
+
+            // La verificación de duplicados se hace mediante el propio Firebase Auth
+            // (createUserWithEmailAndPassword falla con 'auth/email-already-in-use' si el
+            // usuario ya existe). Antes se hacía una consulta extra a Firestore para
+            // revisar duplicados, pero esa consulta requiere permiso de lectura ANTES de
+            // que el usuario esté autenticado, y las reglas de seguridad por defecto de
+            // Firestore la bloquean (permission-denied), impidiendo continuar el registro.
+            let cred = await createUserWithEmailAndPassword(window.firebaseAuth, usuarioAEmail(usuario), clave);
+            await setDoc(doc(window.firebaseDb, 'usuarios', cred.user.uid), {
+                usuario: usuario,
+                usuarioLower: usuarioLower,
+                puntuacionAjedrez: 0,
+                puntuacionBattlecats: 0,
+                fechaRegistro: serverTimestamp()
+            });
+            // onAuthStateChanged actualiza la interfaz automáticamente
+        } catch (e) {
+            console.error('Error al registrar usuario:', e.code, e.message);
+            errorBox.innerText = traducirErrorFirebase(e);
+            errorBox.classList.remove('oculto');
+        }
     }
 
-    function iniciarSesion() {
+    async function iniciarSesion() {
         let usuario = document.getElementById('login-usuario').value.trim();
         let clave = document.getElementById('login-clave').value;
         let errorBox = document.getElementById('login-error');
-
-        let usuarios = obtenerUsuarios();
-        if (!usuarios[usuario] || usuarios[usuario] !== clave) {
-            errorBox.innerText = 'Usuario o contraseña incorrectos.';
-            errorBox.classList.remove('oculto');
-            return;
-        }
-
-        localStorage.setItem('bc_sesion_usuario', usuario);
         errorBox.classList.add('oculto');
-        verificarSesion();
+
+        if (!usuario || !clave) { errorBox.innerText = 'Completa usuario y contraseña.'; errorBox.classList.remove('oculto'); return; }
+
+        await esperarFirebase();
+        try {
+            await window.fb.signInWithEmailAndPassword(window.firebaseAuth, usuarioAEmail(usuario), clave);
+        } catch (e) {
+            console.error('Error al iniciar sesión:', e.code, e.message);
+            errorBox.innerText = traducirErrorFirebase(e);
+            errorBox.classList.remove('oculto');
+        }
     }
 
     function cerrarSesion() {
-        localStorage.removeItem('bc_sesion_usuario');
-        location.reload();
+        esperarFirebase()
+            .then(() => window.fb.signOut(window.firebaseAuth))
+            .then(() => location.reload());
     }
 
     function cerrarBienvenida() {
