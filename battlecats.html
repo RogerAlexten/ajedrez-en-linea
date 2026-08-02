@@ -5,6 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Battle Cats Chess RPG</title>
   <link href="style_bc.css" rel="stylesheet" type="text/css" />
+
+  <!-- ===== FIREBASE (Autenticación + Base de datos) — mismo proyecto que index.html ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, increment
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBA2bKVsxeYTdcYeMo_foOEcoZfcy46k7o",
+      authDomain: "ajedrez-en-linea-59b9f.firebaseapp.com",
+      projectId: "ajedrez-en-linea-59b9f",
+      storageBucket: "ajedrez-en-linea-59b9f.firebasestorage.app",
+      messagingSenderId: "785622879670",
+      appId: "1:785622879670:web:a956a54350c314da99c517",
+      measurementId: "G-HSN7C4VHPF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.firebaseAuth = getAuth(app);
+    window.firebaseDb = getFirestore(app);
+    window.fb = { signOut, onAuthStateChanged, doc, getDoc, updateDoc, increment };
+    window.dispatchEvent(new Event('firebase-listo'));
+  </script>
   <style>
     /* RESALTADO DE TUTORIAL: borde rojo pulsante en la casilla/carta correcta */
     @keyframes pulsoTutorial {
@@ -986,6 +1013,23 @@
   </style>
 </head>
 <body class="theme-battlecats">
+
+<!-- ============================================================
+     PANTALLA DE PRECARGA (recursos + verificación de sesión)
+     Cubre todo hasta que termine de cargar imágenes/gifs/sonidos/música
+     y se confirme que hay una sesión iniciada.
+     ============================================================ -->
+<div id="preload-overlay-bc" style="position:fixed; inset:0; z-index:999999; background:#0a0a0f; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.4s ease; font-family:inherit;">
+  <img src="icono_gato_loading.png" onerror="this.style.display='none'" style="width:72px; height:72px; margin-bottom:18px; animation:preloadPulseBC 1s ease-in-out infinite;">
+  <p style="color:#ffc107; font-weight:900; font-size:16px; letter-spacing:1px; margin-bottom:14px;">CARGANDO BATTLE CATS CHESS...</p>
+  <div style="width:260px; max-width:70vw; height:14px; background:#222; border:2px solid #ffc107; border-radius:8px; overflow:hidden;">
+    <div id="preload-bar-fill-bc" style="width:0%; height:100%; background:linear-gradient(90deg,#ffc107,#ff8f00); transition:width 0.2s ease;"></div>
+  </div>
+  <p id="preload-porcentaje-bc" style="color:#ddd; font-size:12px; margin-top:10px; font-weight:bold;">0%</p>
+</div>
+<style>
+  @keyframes preloadPulseBC { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.08); opacity:0.85; } }
+</style>
 
 <!-- ============================================================
      ESCENARIO PRINCIPAL DEL LOBBY
@@ -2641,24 +2685,200 @@
         }
     }
 
-    window.onload = () => {
-        let usuarioActivo = localStorage.getItem('bc_sesion_usuario');
-        if (!usuarioActivo) { window.location.href = 'index.html'; return; }
-        document.getElementById('caja-sesion-usuario').classList.remove('oculto');
-        document.getElementById('texto-usuario-actual').innerText = usuarioActivo;
+    /* ===== SESIÓN CON FIREBASE (mismo usuario logeado en index.html) ===== */
+    let usuarioActivoUid = null;
+    let usuarioActivoBC = '';
+    let scoreUserRank = 0;
 
-        document.getElementById('vol-slider').value = 20; changingVolume(); 
-        renderBots(); renderTemas(); renderEfectosUI(); 
-        inicializarTablero();
-        cargarTableroBattleCats(); 
-        actualizarTablero();     
-        actualizarVistaModalDeck();
-        document.getElementById('modal-reglas-bc').classList.add('oculto');
+    function esperarFirebaseBC() {
+        return new Promise((resolve) => {
+            if (window.fb && window.firebaseAuth) { resolve(); return; }
+            window.addEventListener('firebase-listo', () => resolve(), { once: true });
+        });
+    }
+
+    // Puntuación User Rank
+    function actualizarUserRankUI() {
+      const el = document.getElementById('user-rank-score-text');
+      if (el) el.innerText = scoreUserRank;
+    }
+
+    async function sumarPuntosRank(pts) {
+      scoreUserRank += pts;
+      actualizarUserRankUI();
+      if (!usuarioActivoUid) return;
+      try {
+          const { doc, updateDoc, increment } = window.fb;
+          await updateDoc(doc(window.firebaseDb, 'usuarios', usuarioActivoUid), { puntuacionBattlecats: increment(pts) });
+      } catch (e) { console.error('No se pudo guardar el puntaje de Battle Cats:', e.code, e.message); }
+    }
+
+    /* ===== ADMINISTRADOR (MODO PRUEBA) =====
+       Solo el usuario "Alexten22" (con la contraseña "sistema2") puede ver y usar el Modo Prueba. */
+    const ADMIN_USUARIO_BC = 'Alexten22';
+    const ADMIN_CLAVE_BC = 'sistema2';
+    function esAdminBC() {
+      return usuarioActivoBC === ADMIN_USUARIO_BC;
+    }
+    function verificarAccesoAdminBC() {
+      if (!esAdminBC()) {
+        alert('El Modo Prueba está reservado para el administrador.');
+        return false;
+      }
+      const clave = prompt('Contraseña de administrador:');
+      if (clave !== ADMIN_CLAVE_BC) {
+        alert('Contraseña incorrecta. Acceso denegado.');
+        return false;
+      }
+      return true;
+    }
+
+    /* ===== PUNTOS SEGÚN EL MODO =====
+       Fácil / Normal / Difícil / Custom: 1 punto por pieza comida, 100 por victoria.
+       Akkus / Miku / Relic: 2 puntos por pieza comida, 150 por victoria.
+       Modo Prueba (admin): no otorga puntos. */
+    function esModoDobleRecompensa() {
+      return tipoBossActivo === 'crazed' || tipoBossActivo === 'crazed2' || tipoBossActivo === 'extrema';
+    }
+    function puntosPorPiezaActual() {
+      return esModoDobleRecompensa() ? 2 : 1;
+    }
+    function puntosPorVictoriaActual() {
+      return esModoDobleRecompensa() ? 150 : 100;
+    }
+
+    /* ============================================================
+       SISTEMA DE PRECARGA DE RECURSOS (imágenes, gifs, sonidos, música)
+       Recorre el propio HTML/JS buscando cualquier archivo de imagen o
+       audio referenciado y lo precarga en memoria ANTES de dejar jugar,
+       para evitar retrasos de animación con internet lento.
+       ============================================================ */
+    function extraerListaAssetsBC() {
+      const encontrados = new Set();
+      try {
+        const html = document.documentElement.outerHTML;
+        const regex = /["']([^"'<>\s]+\.(?:png|jpe?g|gif|webp|mp3|wav|ogg|mp4))["']/gi;
+        let m;
+        while ((m = regex.exec(html)) !== null) {
+          let ruta = m[1].trim();
+          if (!ruta || ruta.startsWith('http') || ruta.startsWith('data:')) continue;
+          encontrados.add(ruta);
+        }
+      } catch (eScanHtml) { console.log('No se pudo escanear el HTML para precarga:', eScanHtml); }
+
+      // Refuerzo: recorrer el roster completo de personajes por si algún nombre se arma dinámicamente
+      try {
+        ['w', 'b'].forEach(color => {
+          for (let tipo in BATTLE_CATS_ROSTER[color]) {
+            BATTLE_CATS_ROSTER[color][tipo].forEach((char, idx) => {
+              const img = char.image || (typeof getArchivoPiezaModal === 'function' ? getArchivoPiezaModal(tipo, color, idx) : null);
+              if (img) encontrados.add(img);
+            });
+          }
+        });
+      } catch (eRoster) { console.log('No se pudo recolectar imágenes del roster para precarga:', eRoster); }
+
+      return Array.from(encontrados);
+    }
+
+    function actualizarBarraPrecargaBC(cargados, total) {
+      const pct = total > 0 ? Math.round((cargados / total) * 100) : 100;
+      const barra = document.getElementById('preload-bar-fill-bc');
+      const texto = document.getElementById('preload-porcentaje-bc');
+      if (barra) barra.style.width = pct + '%';
+      if (texto) texto.innerText = `${pct}% (${cargados}/${total})`;
+    }
+
+    function precargarRecursosBC() {
+      return new Promise((resolve) => {
+        const lista = extraerListaAssetsBC();
+        const total = lista.length;
+        if (total === 0) { actualizarBarraPrecargaBC(1, 1); resolve(); return; }
+
+        let cargados = 0, resuelto = false;
+        function marcarUno() {
+          cargados++;
+          actualizarBarraPrecargaBC(cargados, total);
+          if (cargados >= total && !resuelto) { resuelto = true; resolve(); }
+        }
+
+        lista.forEach((ruta) => {
+          if (/\.(mp3|wav|ogg|mp4)$/i.test(ruta)) {
+            const a = new Audio();
+            a.preload = 'auto';
+            a.oncanplaythrough = marcarUno;
+            a.onerror = marcarUno;
+            a.src = ruta;
+            try { a.load(); } catch (eLoadAudio) { marcarUno(); }
+          } else {
+            const img = new Image();
+            img.onload = marcarUno;
+            img.onerror = marcarUno;
+            img.src = ruta;
+          }
+        });
+
+        // Salvavidas: si algún recurso nunca dispara su evento (raro), no bloquear el juego más de 20s
+        setTimeout(() => { if (!resuelto) { resuelto = true; resolve(); } }, 20000);
+      });
+    }
+
+    function ocultarPantallaPrecargaBC() {
+      const overlay = document.getElementById('preload-overlay-bc');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 400);
+      }
+    }
+
+    function mostrarMensajeRequiereCuentaBC() {
+      const overlay = document.getElementById('preload-overlay-bc');
+      if (!overlay) { window.location.href = 'index.html'; return; }
+      overlay.innerHTML = `
+        <div style="text-align:center; padding: 20px; max-width: 80vw;">
+          <p style="color:#ff5555; font-size: 18px; font-weight:900; margin-bottom: 14px;">NECESITAS UNA CUENTA PARA JUGAR ESTE MODO</p>
+          <p style="color:#ddd; font-size: 14px;">Serás redirigido para iniciar sesión...</p>
+        </div>`;
+      setTimeout(() => { window.location.href = 'index.html'; }, 1800);
+    }
+
+    window.onload = async () => {
+        // La precarga de recursos arranca de inmediato, en paralelo con la verificación de sesión
+        const listoAssets = precargarRecursosBC();
+
+        await esperarFirebaseBC();
+        const { onAuthStateChanged, doc, getDoc } = window.fb;
+
+        onAuthStateChanged(window.firebaseAuth, async (user) => {
+            if (!user) { mostrarMensajeRequiereCuentaBC(); return; }
+
+            usuarioActivoUid = user.uid;
+            let snap = await getDoc(doc(window.firebaseDb, 'usuarios', user.uid));
+            let datos = snap.exists() ? snap.data() : { usuario: user.email.split('@')[0], puntuacionBattlecats: 0 };
+            usuarioActivoBC = datos.usuario;
+            scoreUserRank = datos.puntuacionBattlecats || 0;
+
+            document.getElementById('caja-sesion-usuario').classList.remove('oculto');
+            document.getElementById('texto-usuario-actual').innerText = usuarioActivoBC;
+            actualizarUserRankUI();
+
+            document.getElementById('vol-slider').value = 20; changingVolume();
+            renderBots(); renderTemas(); renderEfectosUI();
+            inicializarTablero();
+            cargarTableroBattleCats();
+            actualizarTablero();
+            actualizarVistaModalDeck();
+            document.getElementById('modal-reglas-bc').classList.add('oculto');
+
+            await listoAssets; // espera a que terminen de precargarse imágenes/gifs/sonidos/música
+            ocultarPantallaPrecargaBC();
+        });
     };
 
     function cerrarSesionBC() {
-        localStorage.removeItem('bc_sesion_usuario');
-        window.location.href = 'index.html';
+        esperarFirebaseBC()
+            .then(() => window.fb.signOut(window.firebaseAuth))
+            .then(() => window.location.href = 'index.html');
     }
 
 
@@ -2687,47 +2907,7 @@
     let currentLevelIndex = 0;
     let stateLobbyLocation = 'dojo'; // 'dojo', 'mapa', 'juego'
 
-    /* ===== PUNTUACIÓN POR USUARIO (corrige el bug del puntaje global) ===== */
-    function obtenerRankingBattleCats() {
-      return JSON.parse(localStorage.getItem('ranking_battlecats') || '{}');
-    }
-    function guardarPuntuacionBattleCats(usuario, puntos) {
-      let ranking = obtenerRankingBattleCats();
-      ranking[usuario] = puntos;
-      localStorage.setItem('ranking_battlecats', JSON.stringify(ranking));
-    }
-
-    let usuarioActivoBC = localStorage.getItem('bc_sesion_usuario') || '';
-    let scoreUserRank = obtenerRankingBattleCats()[usuarioActivoBC] || 0;
-
-    // Migración única: el puntaje viejo era global (bug). Se asigna una sola vez
-    // al usuario que estaba activo al aplicar esta corrección y luego se elimina.
-    (function migrarPuntajeGlobalAntiguo() {
-      let antiguo = localStorage.getItem('bc_user_rank_puntos');
-      if (antiguo !== null) {
-        if (usuarioActivoBC) {
-          let ranking = obtenerRankingBattleCats();
-          if (ranking[usuarioActivoBC] === undefined) {
-            ranking[usuarioActivoBC] = parseInt(antiguo, 10) || 0;
-            localStorage.setItem('ranking_battlecats', JSON.stringify(ranking));
-            scoreUserRank = ranking[usuarioActivoBC];
-          }
-        }
-        localStorage.removeItem('bc_user_rank_puntos');
-      }
-    })();
-
-    // Puntuación User Rank
-    function actualizarUserRankUI() {
-      const el = document.getElementById('user-rank-score-text');
-      if (el) el.innerText = scoreUserRank;
-    }
-
-    function sumarPuntosRank(pts) {
-      scoreUserRank += pts;
-      guardarPuntuacionBattleCats(usuarioActivoBC, scoreUserRank);
-      actualizarUserRankUI();
-    }
+    /* ===== PUNTUACIÓN POR USUARIO: ahora se guarda en Firestore, ver sumarPuntosRank más arriba ===== */
 
     // Rotación de los 3 mensajes del cuadro del Dojo
     function rotarMensajeDojo() {
@@ -2742,6 +2922,8 @@
 
       for (let i = 0; i < MAP_LEVELS.length; i++) {
         const lvl = MAP_LEVELS[i];
+        const ocultoAdmin = (lvl.id === 'prueba' && !esAdminBC());
+        if (ocultoAdmin) continue; // El Modo Prueba solo es visible para el administrador
 
         const redNode = document.createElement('div');
         redNode.className = 'map-node-red';
@@ -2752,15 +2934,22 @@
 
         if (i < MAP_LEVELS.length - 1) {
           const nextLvl = MAP_LEVELS[i + 1];
-          const steps = 5;
-          for (let s = 1; s < steps; s++) {
-            const dot = document.createElement('div');
-            dot.className = 'map-dot-white';
-            dot.style.left = (lvl.x + (nextLvl.x - lvl.x) * (s / steps)) + '%';
-            dot.style.top = (lvl.y + (nextLvl.y - lvl.y) * (s / steps)) + '%';
-            holder.appendChild(dot);
+          const nextOcultoAdmin = (nextLvl.id === 'prueba' && !esAdminBC());
+          if (!nextOcultoAdmin) {
+            const steps = 5;
+            for (let s = 1; s < steps; s++) {
+              const dot = document.createElement('div');
+              dot.className = 'map-dot-white';
+              dot.style.left = (lvl.x + (nextLvl.x - lvl.x) * (s / steps)) + '%';
+              dot.style.top = (lvl.y + (nextLvl.y - lvl.y) * (s / steps)) + '%';
+              holder.appendChild(dot);
+            }
           }
         }
+      }
+      // Si el nivel actualmente seleccionado es el Modo Prueba y el usuario no es admin, reubicar la selección
+      if (MAP_LEVELS[currentLevelIndex] && MAP_LEVELS[currentLevelIndex].id === 'prueba' && !esAdminBC()) {
+        currentLevelIndex = 0;
       }
       actualizarPosicionGatoMapa();
     }
@@ -2802,8 +2991,13 @@
 
     // Mueve al gato de punto rojo en punto rojo con las flechas izquierda/derecha
     function cambiarNivelSeleccionado(delta) {
-      const nuevoIndex = currentLevelIndex + delta;
+      let nuevoIndex = currentLevelIndex + delta;
       if (nuevoIndex < 0 || nuevoIndex >= MAP_LEVELS.length) return;
+      // Saltar el Modo Prueba si el usuario no es el administrador
+      if (MAP_LEVELS[nuevoIndex].id === 'prueba' && !esAdminBC()) {
+        nuevoIndex += delta;
+        if (nuevoIndex < 0 || nuevoIndex >= MAP_LEVELS.length) return;
+      }
       seleccionarNivelMapa(nuevoIndex);
     }
 
@@ -2904,6 +3098,8 @@
     function confirmarEIniciarNivel() {
       reproducirClic();
       const lvl = MAP_LEVELS[currentLevelIndex];
+
+      if (lvl.id === 'prueba' && !verificarAccesoAdminBC()) { return; }
 
       modoTutorial = false;
       botAutoPruebaActivo = false;
@@ -3066,13 +3262,15 @@
     }
 
     // ============ INTEGRACIÓN DEL SISTEMA DE PUNTOS (RANKING) ============
-    // +1 punto cuando TÚ capturas una pieza rival, +100 puntos si ganas la partida.
+    // Fácil/Normal/Difícil/Custom: +1 por pieza comida, +100 por victoria.
+    // Akkus/Miku/Relic: +2 por pieza comida, +150 por victoria.
+    // Modo Prueba (admin): no otorga puntos.
     const originalLimpiarEstadosCapturaLobby = limpiarEstadosPorCaptura;
     limpiarEstadosPorCaptura = function(coord) {
       try {
         const piezaCapturadora = juego.get(coord);
-        if (piezaCapturadora && piezaCapturadora.color === equipoJugador) {
-          sumarPuntosRank(1);
+        if (piezaCapturadora && piezaCapturadora.color === equipoJugador && tipoBossActivo !== 'prueba') {
+          sumarPuntosRank(puntosPorPiezaActual());
         }
       } catch (eScoreCap) {
         console.log('No se pudo evaluar puntos por captura:', eScoreCap);
@@ -3082,8 +3280,8 @@
 
     const originalLockGameResultLobby = lockGame;
     lockGame = function(resultado, razon) {
-      if (resultado === 'victoria') {
-        sumarPuntosRank(100);
+      if (resultado === 'victoria' && tipoBossActivo !== 'prueba') {
+        sumarPuntosRank(puntosPorVictoriaActual());
       }
       if (typeof originalLockGameResultLobby === 'function') originalLockGameResultLobby(resultado, razon);
     };
@@ -3410,10 +3608,11 @@
             <strong style="color: #ffae00; display: block; margin-bottom: 2px; font-size: 13px;">DIFICULTAD EXTREMA</strong>
             <span style="font-size: 11px; color: #ddd; font-weight: bold;">MAZO: <span style="color:#ffc107;">RELICS/AKKU (FIJO)</span></span>
         </div>
+        ${esAdminBC() ? `
         <div class="item-lista ${tipoBossActivo === 'prueba' && !modoTutorial ? 'activo' : ''}" style="padding: 8px 10px; cursor: pointer; border: 2px solid #17a2b8; background-color: #111; margin-top: 6px;" onclick="seleccionarSalaPruebas()">
-            <strong style="color: #17a2b8; display: block; margin-bottom: 2px; font-size: 13px;">SALA DE PRUEBAS</strong>
+            <strong style="color: #17a2b8; display: block; margin-bottom: 2px; font-size: 13px;">SALA DE PRUEBAS (ADMIN)</strong>
             <span style="font-size: 11px; color: #ddd; font-weight: bold;">MODO: <span style="color:#ffc107;">SIN BOTS (2 JUG.)</span></span>
-        </div>`;
+        </div>` : ''}`;
         document.getElementById('lista-bots').innerHTML = html;
     }
 
@@ -3490,6 +3689,7 @@
 
     function seleccionarSalaPruebas() {
         reproducirClic();
+        if (!verificarAccesoAdminBC()) return;
         tipoBossActivo = 'prueba';
         modoTutorial = false;
         botAutoPruebaActivo = false;
