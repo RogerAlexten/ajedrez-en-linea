@@ -1,0 +1,757 @@
+/* --- VARIABLES DEL TEMA BATTLE CATS --- */
+:root, body.theme-battlecats {
+  --bg-dark: #2a2a2a; 
+  --bg-panel: rgba(50, 50, 50, 0.9); 
+  --bg-titulo: rgba(0, 0, 0, 0.5); 
+  --color-texto: #ffffff; 
+  --color-texto-cajas: #ffffff;
+  --color-jugada: #cccccc;
+  --blanca-bg: #d9d9d9; 
+  --negra-bg: #595959;  
+  --blanca-txt: #595959;
+  --negra-txt: #d9d9d9;
+  --borde: #000000; 
+  --padding-tablero: 0px; 
+  --mostrar-coords: block; 
+  --borde-tablero: 3px solid var(--borde); 
+  --sombra-tablero: 0px 10px 40px rgba(0,0,0,0.6); 
+  --altura-pieza: 165%; 
+  --bottom-pieza: 2%; 
+
+  background-color: #333333;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Ajustes de Piezas en el Tablero */
+body.theme-battlecats img.pieza[src*="peon"] { height: 85% !important; bottom: 7.5% !important; }
+
+/* Ajuste específico de las piezas colab Miku en el tablero: peón Miku Cat más grande, caballo Meiko & Cat más pequeño */
+body.theme-battlecats img.pieza[src*="peon-blanco_alt2"],
+img.pieza[src*="peon-blanco_alt2"] { height: 145% !important; bottom: 2% !important; }
+img.pieza[src*="caballo-blanco_alt2"] { height: 125% !important; }
+
+/* Piezas negras colab Miku: Miku Perrito (peón) más pequeño, Kagamine Rin & Len (caballo) un poco más grande */
+body.theme-battlecats img.pieza[src*="peon-negro_alt2"],
+img.pieza[src*="peon-negro_alt2"] { height: 95% !important; bottom: 2% !important; }
+img.pieza[src*="caballo-negro_alt2"] { height: 145% !important; }
+
+/* Relic Doge (peón): un poco más pequeño que el resto */
+body.theme-battlecats img.pieza[src*="relic-doge"],
+img.pieza[src*="relic-doge"] { height: 145% !important; bottom: 5% !important; }
+
+/* Relic Yulala (caballo negro): más grande, al nivel de una reina o más */
+body.theme-battlecats img.pieza[src*="battlecats-caballo-negro"],
+img.pieza[src*="battlecats-caballo-negro"] { height: 210% !important; bottom: 0% !important; }
+
+body.theme-battlecats .pieza.bP { transform: scale(1.30) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.bR { transform: scale(1.00) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.bN { transform: scale(1.15) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.bB { transform: scale(1.10) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.bQ { transform: scale(1.05) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.bK { transform: scale(1.20) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.wP { transform: scale(1.00) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.wR { transform: scale(1.15) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.wN { transform: scale(1.25) !important; margin-left: 15px !important; margin-bottom: -3px !important; }
+body.theme-battlecats .pieza.wB { transform: scale(1.15) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.wQ { transform: scale(1.25) !important; margin: 0 !important; }
+body.theme-battlecats .pieza.wK { transform: scale(1.25) !important; margin: 0 !important; }
+
+/* Estructura Base */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; font-family: Arial, sans-serif; }
+header { width: 100%; background-color: var(--bg-dark); color: var(--color-texto); padding: 15px 30px; display: flex; justify-content: center; align-items: center; border-bottom: 3px solid var(--borde); margin-bottom: 20px; z-index: 10; position: relative;}
+
+/* SESIÓN (usuario conectado / cerrar sesión) */
+#caja-sesion-usuario {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--color-texto);
+  z-index: 11;
+}
+#caja-sesion-usuario a { color: #ffc107; text-decoration: none; }
+#caja-sesion-usuario a:hover { text-decoration: underline; }
+.header-titulo { font-size: 24px; font-weight: bold; letter-spacing: 2px; background-color: var(--bg-titulo, transparent); padding: 8px 20px; border-radius: 8px; }
+.main-wrapper { display: flex; justify-content: center; align-items: flex-start; gap: 20px; width: 100%; max-width: 1200px; padding: 0 20px; }
+
+/* PANELES LATERALES */
+.panel { width: 300px; height: 85vh; background-color: var(--bg-dark); border-radius: 10px; padding: 20px; color: var(--color-texto); box-shadow: 0px 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; border: 2px solid var(--borde); position: relative; justify-content: flex-start; }
+.seccion-fija { display: flex; flex-direction: column; flex: 0 0 auto; }
+.seccion-expandible { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+h3 { font-size: 16px; margin-bottom: 6px; border-bottom: 2px solid var(--borde); padding: 6px 10px; border-radius: 5px; flex-shrink: 0; background-color: var(--bg-panel); }
+
+.lista-scroll { flex: 1; overflow-y: auto; padding-right: 5px; background-color: var(--bg-panel); border-radius: 5px; border: 1px solid var(--borde); }
+.lista-scroll::-webkit-scrollbar { width: 6px; } 
+.lista-scroll::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 3px; }
+
+/* Oponentes y Temas */
+.item-lista { background: var(--bg-panel); border: 1px solid var(--borde); padding: 10px; margin-bottom: 6px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: var(--color-texto-cajas); }
+.item-lista.activo { border: 3px solid #28a745 !important; box-shadow: 0 0 15px rgba(40, 167, 69, 0.9), inset 0 0 40px rgba(40, 167, 69, 0.5) !important; }
+#lista-temas div { background-color: var(--bg-panel); border: 1px solid var(--borde); padding: 8px !important; margin-bottom: 6px; border-radius: 5px; color: var(--color-texto-cajas); cursor: pointer; font-size: 14px; }
+#lista-temas div:hover { filter: brightness(1.1); }
+#lista-temas div:nth-child(10) { display: none !important; }
+
+/* Historial */
+#historial { padding: 10px; font-size: 13px; line-height: 1.4; color: var(--color-texto-cajas); }
+.jugada-normal { color: var(--color-jugada); margin-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
+.jugada-captura { color: #d63c00; font-weight: bold; margin-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; } 
+
+.cementerio-grid { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px; padding: 10px; }
+.cementerio-grid img, .pieza-muerta { width: 35px !important; height: 35px !important; max-width: 35px !important; max-height: 35px !important; object-fit: contain !important; transform: none !important; margin: 0 !important; }
+
+/* Tablero */
+.content { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; position: relative; }
+.tablero { display: flex; width: 100%; aspect-ratio: 1/1; box-shadow: var(--sombra-tablero); border-radius: 6px; z-index: 10; position: relative; margin-bottom: 15px; background-color: var(--blanca-bg); }
+.ajedrez { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); border: var(--borde-tablero); padding: var(--padding-tablero); }
+.blanca { background-color: var(--blanca-bg); color: var(--blanca-txt); position: relative; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.negra { background-color: var(--negra-bg); color: var(--negra-txt); position: relative; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.coord-num { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: bold; pointer-events: none; }
+.coord-letra { position: absolute; bottom: 2px; right: 4px; font-size: 12px; font-weight: bold; pointer-events: none; }
+
+.pieza { position: absolute; bottom: var(--bottom-pieza); height: var(--altura-pieza); width: auto; z-index: 500; transform-origin: bottom center; transition: transform 0.15s; pointer-events: none; }
+@keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.animacion-entrada { animation: popIn 0.4s ease-out forwards; opacity: 0; }
+@keyframes aterriza-pesado { 0% { transform: scale(1, 1) rotate(15deg); } 40% { transform: scale(1.15, 0.85) rotate(0deg); } 75% { transform: scale(0.95, 1.05) rotate(0deg); } 100% { transform: scale(1, 1) rotate(0deg); } }
+.efecto-bamboleo { animation: aterriza-pesado 0.35s ease-out forwards; }
+@keyframes gota { 0% { transform: scale(0); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.8; } 100% { transform: scale(1); opacity: 0.6; } }
+@keyframes pulso-guia { 0%, 100% { box-shadow: 0 0 4px 1px rgba(255,255,255,0.35); } 50% { box-shadow: 0 0 10px 4px rgba(255,255,255,0.65); } }
+@keyframes pulso-guia-roja { 0%, 100% { box-shadow: 0 0 4px 1px rgba(255,0,0,0.4); } 50% { box-shadow: 0 0 10px 4px rgba(255,30,30,0.8); } }
+.punto-guia { width: 30%; height: 30%; background-color: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: 0 0 6px 2px rgba(255,255,255,0.4); border-radius: 50%; position: absolute; pointer-events: none; z-index: 15; opacity: 0; animation: gota 0.3s ease-out forwards, pulso-guia 1.2s ease-in-out infinite 0.3s; }
+.punto-guia-bloqueado { width: 34%; height: 34%; background-color: rgba(255, 30, 30, 0.55); border: 2px solid rgba(255, 60, 60, 0.9); box-shadow: 0 0 6px 2px rgba(255,0,0,0.5); border-radius: 50%; position: absolute; pointer-events: none; z-index: 15; opacity: 0; animation: gota 0.3s ease-out forwards, pulso-guia-roja 1.2s ease-in-out infinite 0.3s; }
+.seleccionada { border: 3px solid #eebb00 !important; background-color: rgba(238, 187, 0, 0.4) !important; box-sizing: border-box; }
+.en-jaque { background-color: #d9534f !important; box-shadow: inset 0 0 20px rgba(0,0,0,0.5) !important; }
+.spawn-highlight { filter: drop-shadow(0 0 15px #ffcc00) brightness(1.3); }
+
+/* Animación del Efecto Cañón GIF (Tamaño Aumentado) */
+.canon-gif-overlay {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: translate(-50%, -50%) scale(1.85) !important;
+  z-index: 1500 !important;
+  pointer-events: none !important;
+}
+.wave-vertical {
+  transform: translate(-50%, -58%) scale(1.85) !important;
+}
+
+/* Animación del Indicador de Cañón (Mira Rebotando) */
+@keyframes reboteRapido { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+.indicador-canon { position: absolute; width: 80%; height: auto; object-fit: contain; bottom: 70%; z-index: 550; pointer-events: none; animation: reboteRapido 0.25s infinite alternate ease-in-out; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.9)); }
+
+/* Botones y Modales Genéricos */
+button { padding: 10px 15px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+.btn-primary { background-color: #0056b3; color: white; } .btn-primary:hover { background-color: #004494; }
+.btn-success { background-color: #28a745; color: white; } .btn-success:hover { background-color: #218838; }
+.btn-danger { background-color: #dc3545; color: white; } .btn-danger:hover { background-color: #c82333; }
+.controles-tablero { display: flex; gap: 15px; width: 100%; justify-content: center; margin-bottom: 10px; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; display: flex; justify-content: center; align-items: center; }
+.modal-box { background: var(--bg-dark); padding: 40px; border-radius: 10px; border: 2px solid var(--borde); text-align: center; max-width: 500px; color: var(--color-texto); }
+.oculto { display: none !important; }
+
+/* MODALES DE VICTORIA Y DERROTA */
+.modal-bc-resultado { background: rgba(0,0,0,0.85); }
+.bc-banner-wrapper { position: absolute; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.bc-banner-center { top: 50%; transform: translateY(-50%); }
+.img-resultado { width: 400px; max-width: 90vw; object-fit: contain; position: relative; z-index: 10; margin-bottom: -5px; filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.8)); }
+.bc-banner-bar { width: 100vw; background-color: #1a233a; border-top: 4px solid #000; border-bottom: 4px solid #000; color: #ffffff; font-size: 45px; font-weight: 900; text-align: center; padding: 15px 0; letter-spacing: 2px; text-transform: uppercase; text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 6px 0 #000; box-shadow: inset 0px 5px 15px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.8); z-index: 5; position: relative; }
+.btn-resultado { margin-top: 30px; font-size: 20px; padding: 15px 40px; border: 3px solid #fff; border-radius: 10px; box-shadow: 0 6px 15px rgba(0,0,0,0.8); z-index: 5; text-transform: uppercase; letter-spacing: 1px; }
+
+.img-victoria-anim { animation: slideInLeft 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+.banner-victoria-anim { opacity: 0; animation: fadeIn 0.5s ease-out 0.8s forwards; }
+@keyframes slideInLeft { 0% { transform: translateX(-150vw); } 100% { transform: translateX(0); } }
+@keyframes fadeIn { to { opacity: 1; } }
+.img-derrota-anim { animation: bounceDropCenter 1.3s ease-out forwards; }
+.banner-derrota-anim { opacity: 0; animation: fadeIn 0.5s ease-out 0.8s forwards; }
+@keyframes bounceDropCenter { 0% { transform: translateY(-800px); } 40% { transform: translateY(0); } 60% { transform: translateY(-40px); } 80% { transform: translateY(0); } 90% { transform: translateY(-10px); } 100% { transform: translateY(0); } }
+
+/* CONTROLES DE AUDIO FIJOS */
+#audio-controls-container { position: fixed; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 10px; background: #1e1e1e; padding: 10px 15px; border-radius: 30px; border: 2px solid #000; box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 2000; }
+#control-volumen { display: flex; align-items: center; gap: 5px; color: #fff; font-size: 14px; font-weight: bold; justify-content: center; margin: 0; }
+#control-volumen input[type="range"] { width: 80px; cursor: pointer; accent-color: #28a745; }
+
+/* WRAPPER GACHA FLOTANTE DERECHO */
+#wrapper-gacha-flotante { position: absolute; left: 105%; top: 0; display: flex; flex-direction: column; gap: 8px; width: 140px; z-index: 100; }
+#btn-cambiar-mazo { background: transparent; border: 1px solid #1f3b60; border-radius: 6px; color: #66ccff; font-size: 11px; font-weight: bold; padding: 6px; cursor: pointer; text-align: center; transition: 0.2s; width: 100%; margin-bottom: 5px; }
+#btn-cambiar-mazo:hover { border-color: #ffc107; color: #ffc107; background: rgba(0,86,179,0.2); }
+
+#guia-flotante-derecha { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.gacha-card-bc { background: #1e1e1e; border: 2px solid #000; border-radius: 8px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); width: 100%; transition: 0.2s; position: relative; cursor: pointer; }
+.gacha-card-bc:hover { border-color: #ffc107; transform: scale(1.05); }
+.gacha-card-bc.cooldown { filter: grayscale(100%); cursor: not-allowed; opacity: 0.4; pointer-events: none; }
+.gacha-card-bc .card-cost { position: absolute; top: 4px; right: 4px; background: #ffc107; color: #000; font-size: 10px; font-weight: 900; padding: 2px 5px; border-radius: 4px; }
+.gacha-card-bc .card-cost.fijo { background: #444; color: #ccc; }
+.guia-char-img { width: 45px !important; height: 45px !important; max-width: 45px !important; max-height: 45px !important; object-fit: contain !important; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); margin-top: 8px; }
+.guia-char-name { font-size: 11px; font-weight: 900; color: #66ccff; text-transform: uppercase; text-align: center; border-top: 1px solid #444; width: 100%; padding-top: 5px; }
+
+/* ESTADOS COMPACTOS */
+.habilidades-scroll-box { max-height: 180px; overflow-y: auto; padding: 8px; }
+.habilidades-scroll-box::-webkit-scrollbar { width: 4px; }
+.habilidades-scroll-box::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 3px; }
+.efecto-row-bc { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.efecto-row-bc:last-child { border-bottom: none; }
+.efecto-icon-box { width: 30px; height: 30px; background: #fff; border: 2px solid #000; border-radius: 6px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.8); overflow: hidden; }
+.efecto-icon-box img { width: 24px !important; height: 24px !important; object-fit: contain !important; }
+.efecto-text-bc { font-size: 10px; color: #fff; line-height: 1.2; }
+.efecto-text-bc b { color: #ffcc00; font-size: 11px; display: block; margin-bottom: 2px; }
+
+/* Barras HP */
+.hp-bar-container { width: 100%; height: 26px; background-color: #111; border: 3px solid var(--borde); position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 5; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #cc0000, #ff3333); width: 100%; transition: width 0.3s ease-out; }
+#allied-hp-fill { background: linear-gradient(90deg, #009900, #33cc33); }
+.hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black, -1px -1px 2px black; pointer-events: none; letter-spacing: 1px; width: 100%; text-align: center; }
+
+/* Cañón Gato */
+#contenedor-canon { position: absolute !important; top: 30px !important; right: 0px !important; z-index: 1000 !important; }
+.btn-canon { background: linear-gradient(180deg, #ffc107, #ff8800); color: #000; font-weight: 900; font-size: 13px; padding: 6px 16px; border: 2px solid #fff; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8); transition: all 0.2s; text-transform: uppercase; }
+.btn-canon:hover { transform: scale(1.08); background: linear-gradient(180deg, #ffdb4d, #ff9900); }
+.btn-canon.desactivado { background: rgba(30,30,30,0.85) !important; color: #888 !important; border-color: #555 !important; cursor: not-allowed !important; box-shadow: none !important; }
+
+.status-counter {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: bold;
+    color: white;
+    /* Un pequeño sombreado de texto reemplaza el borde para que sea legible sin tapar la imagen */
+    text-shadow: 1px 1px 2px black, -1px -1px 2px black; 
+    background: none; /* Sin círculo ni borde */
+}
+
+
+/* ==========================================
+   ESTILOS DEL LOBBY - THE BATTLE CATS (v2, integrado)
+   ========================================== */
+/* ============================================================
+   LOBBY BATTLE CATS - CAPAS SUPERPUESTAS EN ESCENARIO 1600x698
+   ============================================================ */
+
+#lobby-viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  user-select: none;
+}
+
+/* Escenario fijo con proporción exacta 1600:698 */
+#lobby-stage {
+  position: relative;
+  width: 100vw;
+  max-width: calc(100vh * (1600 / 698));
+  height: calc(100vw * (698 / 1600));
+  max-height: 100vh;
+  aspect-ratio: 1600 / 698;
+  overflow: hidden;
+  background: #000;
+}
+
+/* CAPAS FULL-CANVAS (1600x698) ENCAJE PERFECTO */
+.layer-full {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+/* MARCOS DE MADERA (Z-INDEX 50) */
+.layer-muro {
+  z-index: 50;
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+#muro-izquierda.anim-muro-salir { transform: translateX(-100%); }
+#muro-derecha.anim-muro-salir { transform: translateX(100%); }
+#muro-arriba.anim-muro-salir { transform: translateY(-100%); }
+#muro-abajo.anim-muro-salir { transform: translateY(100%); }
+
+/* PUERTAS CORREDIZAS (Z-INDEX 20) — se abren en la FASE 2 (0.5s) */
+.door-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.puerta-abierta-izq { transform: translateX(-102%); }
+.puerta-abierta-der { transform: translateX(102%); }
+
+/* INTERFAZ DEL DOJO (Z-INDEX 30) */
+#dojo-ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  transition: opacity 0.3s ease;
+}
+
+/* ÁREAS INTERACTIVAS SOBRE LAS CAPAS TRANS PARENTES */
+#user-rank-score-text {
+  position: absolute;
+  left: 11.8%;
+  top: 11.5%;
+  width: 19.5%;
+  height: 8.6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffc107;
+  font-size: 1.8vw;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+  z-index: 35;
+}
+
+#hitbox-start {
+  position: absolute;
+  left: 7.25%;
+  top: 22.35%;
+  width: 28.38%;
+  height: 12.46%;
+  cursor: pointer;
+  z-index: 35;
+}
+
+/* Posición en la pantalla del Dojo: tercer botón, apilado justo debajo de Tutorial */
+/* Ahora es solo un hitbox invisible: la imagen eq.png ya trae el diseño del botón */
+#hitbox-equipo-dojo {
+  position: absolute;
+  cursor: pointer;
+  z-index: 40;
+  left: 8.44%;
+  top: 51.7%;
+  width: 27.19%;
+  height: 12.03%;
+}
+
+/* BOTÓN EQUIPO (MAPA) — ahora es la imagen equipo.png, insignia junto al botón Start */
+#hitbox-equipo-map {
+  position: absolute;
+  left: 58.38%;
+  top: 64.04%;
+  width: 5.12%;
+  height: 11.75%;
+  cursor: pointer;
+  z-index: 17;
+}
+#layer-btn-equipo-map {
+  z-index: 16;
+  transition: filter 0.15s ease;
+  transform: translateX(-6%);
+  filter: brightness(1) drop-shadow(0 0 0 rgba(255,230,120,0));
+}
+#hitbox-equipo-map:hover ~ #layer-btn-equipo-map {
+  filter: brightness(1.08) drop-shadow(0 0 5px rgba(255,230,120,0.6));
+}
+#hitbox-equipo-map:active ~ #layer-btn-equipo-map {
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(255,230,120,0.8));
+}
+
+#hitbox-tutorial {
+  position: absolute;
+  left: 8.44%;
+  top: 37.25%;
+  width: 27.19%;
+  height: 12.03%;
+  cursor: pointer;
+  z-index: 35;
+}
+
+#hitbox-menu {
+  position: absolute;
+  left: 10.62%;
+  top: 67.34%;
+  width: 9.19%;
+  height: 15.62%;
+  cursor: pointer;
+  z-index: 35;
+}
+
+#hitbox-msg-box {
+  position: absolute;
+  left: 55.5%;
+  top: 17.77%;
+  width: 35.0%;
+  height: 43.7%;
+  cursor: pointer;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6% 8%;
+  box-sizing: border-box;
+  transition: transform 0.5s ease-in;
+}
+#layer-msg-box,
+#layer-btn-star,
+#layer-btn-tutorial,
+#layer-btn-menu,
+#hitbox-start,
+#hitbox-equipo-dojo,
+#layer-btn-equipo {
+  transition: transform 0.5s ease-in;
+}
+#msg-text-display {
+  color: #ffffff;
+  font-size: 1.1vw;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.4;
+  text-shadow: 1px 1px 2px #000;
+}
+
+/* ANIMACIÓN DEL GATO RÁPIDA DE ARRIBA A ABAJO (pausa mínima arriba y abajo) */
+#layer-gato {
+  transition: transform 0.5s ease-in;
+  animation: catBobbing 1.4s ease-in-out infinite;
+}
+@keyframes catBobbing {
+  0%, 6% { transform: translateY(0); }
+  50%, 56% { transform: translateY(-18px); }
+  100% { transform: translateY(0); }
+}
+
+.anim-gato-bajar { transform: translateY(180%) !important; }
+.anim-msg-bajar { transform: translateY(180%) !important; }
+.anim-btn-salir { transform: translateX(-180%) !important; }
+
+/* PANTALLA DE MAPA (DETRÁS DE LAS PUERTAS, Z-INDEX 10) */
+#map-screen-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('fondo lobby.png') center / 100% 100% no-repeat;
+  z-index: 10;
+}
+
+/* BANNER BLANCO CON NOMBRE DEL NIVEL */
+#level-banner-top {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 4px solid #000000;
+  border-radius: 6px;
+  padding: 6px 28px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+  z-index: 15;
+}
+#level-banner-title {
+  color: #000000;
+  font-size: 1.6vw;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ICONO DEL BOSS (GIF GRANDE Y RECORTADO, ESTILO CARTA DE GACHA) DENTRO DEL BANNER */
+#level-banner-icon-box {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 12px;
+  border: 3px solid #000000;
+  box-shadow: 0 0 6px rgba(0,0,0,0.6);
+  background: #111;
+}
+#level-banner-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  transform: scale(1.35);
+}
+
+/* TEMA BANNER AKKUS (CRAZED BOSS): letras amarillas, cuadro azul */
+#level-banner-top.banner-akkus {
+  background: #0057d8;
+  border-color: #003f9e;
+}
+#level-banner-top.banner-akkus #level-banner-title {
+  color: #ffe100;
+  text-shadow: 1px 1px 0 #003f9e, -1px -1px 0 #003f9e, 1px -1px 0 #003f9e, -1px 1px 0 #003f9e;
+}
+#level-banner-top.banner-akkus #level-banner-icon-box {
+  border-color: #ffe100;
+}
+
+/* RUTA Y NODOS DEL MAPA */
+.map-route-container {
+  position: absolute;
+  top: 25%;
+  left: 15%;
+  width: 70%;
+  height: 55%;
+  z-index: 12;
+}
+.map-node-red {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  background: radial-gradient(circle, #ff3333 40%, #aa0000 100%);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,0,0,0.8);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s;
+}
+.map-node-red:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+.map-dot-white {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border: 1px solid #000;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* SPRITE DEL GATO EN EL MAPA */
+#map-cat-player {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  z-index: 16;
+  transform: translate(-50%, -78%);
+  transition: left 0.4s ease, top 0.4s ease;
+  pointer-events: none;
+}
+#map-cat-player img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#hitbox-play-map {
+  position: absolute;
+  left: 65.94%;
+  top: 64.28%;
+  width: 26.12%;
+  height: 11.21%;
+  cursor: pointer;
+  z-index: 15;
+}
+#layer-btn-play-map {
+  transform-origin: 78.99% 72.28%;
+  transition: filter 0.15s ease;
+  transform: translateY(-2.4%) scale(0.9);
+  filter: brightness(1) drop-shadow(0 0 0 rgba(255,230,120,0));
+}
+#hitbox-play-map:hover ~ #layer-btn-play-map {
+  filter: brightness(1.08) drop-shadow(0 0 6px rgba(255,230,120,0.6));
+}
+#hitbox-play-map:active ~ #layer-btn-play-map {
+  filter: brightness(1.15) drop-shadow(0 0 10px rgba(255,230,120,0.8));
+}
+
+#hitbox-retroceder {
+  position: absolute;
+  left: 8.0%;
+  top: 84.38%;
+  width: 6.62%;
+  height: 15.04%;
+  cursor: pointer;
+  z-index: 60;
+}
+
+/* FLECHAS IZQUIERDA/DERECHA DEL MAPA — mueven al gato de punto rojo en punto rojo */
+#hitbox-nivel-izq {
+  position: absolute;
+  left: 11.25%;
+  top: 34.38%;
+  width: 4.06%;
+  height: 17.77%;
+  cursor: pointer;
+  z-index: 15;
+}
+#layer-btn-nivel-izq {
+  z-index: 14;
+  transition: transform 0.15s ease;
+}
+#hitbox-nivel-izq:hover ~ #layer-btn-nivel-izq { transform: translateX(4px); }
+#hitbox-nivel-izq:active ~ #layer-btn-nivel-izq { transform: translateX(8px); }
+
+#hitbox-nivel-der {
+  position: absolute;
+  left: 83.62%;
+  top: 35.53%;
+  width: 4.38%;
+  height: 19.05%;
+  cursor: pointer;
+  z-index: 15;
+}
+#layer-btn-nivel-der {
+  z-index: 14;
+  transition: transform 0.15s ease;
+}
+#hitbox-nivel-der:hover ~ #layer-btn-nivel-der { transform: translateX(-4px); }
+#hitbox-nivel-der:active ~ #layer-btn-nivel-der { transform: translateX(-8px); }
+
+/* BOTÓN SALIR EN PARTIDA — usa retroceder.png (el mismo asset que el resto del lobby),
+   recortado con overflow:hidden para mostrar solo el ícono en una esquina fija */
+#btn-salir-partida-game {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+}
+#btn-salir-partida-game img {
+  position: absolute;
+  width: 975px;
+  max-width: none;
+  top: -359px;
+  left: -78px;
+  pointer-events: none;
+}
+
+/* Botón pequeño de Cambiar Equipo, debajo del panel del Cañón Gato — exclusivo de Sala de Pruebas */
+/* Botón pequeño "Cambiar Mazo" bajo el panel del Cañón Gato — exclusivo de Sala de Pruebas.
+   Usa el mismo ícono equipo.png del botón Equipo del mapa, recortado sobre su badge circular. */
+#btn-mini-cambiar-equipo {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 0;
+  overflow: hidden;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+}
+#btn-mini-cambiar-equipo img {
+  position: absolute;
+  width: 1234px;
+  max-width: none;
+  top: -344px;
+  left: -794px;
+  pointer-events: none;
+}
+
+/* MODAL CATÁLOGO DE PERSONAJES DISPONIBLES */
+#modal-catalogo-chars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.88);
+  z-index: 30000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.catalogo-box {
+  background: #1e1e1e;
+  border: 3px solid #ffc107;
+  border-radius: 12px;
+  width: 85%;
+  max-width: 900px;
+  max-height: 80vh;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+}
+.catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  margin-top: 15px;
+  padding-right: 8px;
+}
+.catalogo-item {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.catalogo-item img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+}
+.catalogo-item p {
+  font-size: 11px;
+  color: #ffc107;
+  font-weight: 900;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Botón de salir de partida (persistente durante el combate) */
+#btn-salir-partida-game {
+  font-size: 13px;
+  padding: 8px 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+}
+
+/* Botón para cancelar la selección de mazo y volver al Dojo — icono retroceder.png
+   (mismo asset del resto del lobby), anclado a la esquina inferior izquierda del modal */
+#modal-reglas-bc .modal-box {
+  position: relative;
+  width: min(700px, 92vw);
+  padding-bottom: 95px;
+}
+#btn-volver-dojo-deck {
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+}
+#btn-volver-dojo-deck img {
+  position: absolute;
+  width: 975px;
+  max-width: none;
+  top: -359px;
+  left: -78px;
+  pointer-events: none;
+}
