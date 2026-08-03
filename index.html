@@ -491,6 +491,7 @@
     }
 
     function cerrarSesion() {
+        localStorage.removeItem('bc_sesion_usuario');
         esperarFirebase()
             .then(() => window.fb.signOut(window.firebaseAuth))
             .then(() => location.reload());
@@ -569,6 +570,7 @@
     function aplicarTema(idTema) {
         // ENLACE MÁGICO AL MUNDO RPG BATTLE CATS[cite: 7]
         if (idTema === 'battlecats') {
+            if (usuarioActual) { localStorage.setItem('bc_sesion_usuario', usuarioActual.usuario); }
             window.location.href = 'battlecats.html';
             return;
         }
