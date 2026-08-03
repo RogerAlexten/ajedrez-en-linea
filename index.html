@@ -344,6 +344,10 @@
                 let datos = snap.exists() ? snap.data() : { usuario: user.email.split('@')[0], puntuacionAjedrez: 0, puntuacionBattlecats: 0 };
                 usuarioActual = { uid: user.uid, usuario: datos.usuario };
 
+                // battlecats.html verifica la sesión leyendo esta bandera de localStorage
+                // (no usa Firebase Auth directamente), así que la mantenemos sincronizada aquí.
+                localStorage.setItem('bc_sesion_usuario', datos.usuario);
+
                 document.getElementById('modal-login').classList.add('oculto');
                 document.getElementById('modal-inicio').classList.remove('oculto');
                 document.getElementById('caja-sesion-usuario').classList.remove('oculto');
@@ -353,6 +357,7 @@
                 renderPuntuaciones();
             } else {
                 usuarioActual = null;
+                localStorage.removeItem('bc_sesion_usuario');
                 document.getElementById('modal-login').classList.remove('oculto');
                 document.getElementById('modal-inicio').classList.add('oculto');
                 document.getElementById('caja-sesion-usuario').classList.add('oculto');
