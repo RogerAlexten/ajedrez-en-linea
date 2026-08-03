@@ -3437,6 +3437,7 @@
                     let idPiezaActual = pieza.type + pieza.color;
                     let claseTipoPieza = pieza.color + pieza.type.toUpperCase();
                     let esBaseballMask = srcNuevo.includes('baseball_mask');
+                    let esZoge = srcNuevo.includes('zoge');
 
                     if (imgExistente) {
                         if (imgExistente.getAttribute('data-pieza') !== idPiezaActual) {
@@ -3445,6 +3446,7 @@
                             setTimeout(() => { if(imgExistente) imgExistente.classList.remove('efecto-bamboleo'); }, 300);
                         }
                         if (esBaseballMask) { imgExistente.style.setProperty('transform', 'scale(0.72)', 'important'); }
+                        else if (esZoge) { imgExistente.style.setProperty('transform', 'scale(0.55)', 'important'); }
                         else { imgExistente.style.removeProperty('transform'); }
                         if (piezasCongeladas[coord]) {
                             imgExistente.classList.add('pieza-congelada');
@@ -3466,6 +3468,7 @@
                         let nuevaImg = document.createElement('img'); nuevaImg.id = imgId; nuevaImg.src = srcNuevo;
                         nuevaImg.className = `pieza ${claseFacultad} ${claseTipoPieza} ${extra}`; nuevaImg.setAttribute('data-pieza', idPiezaActual);
                         if (esBaseballMask) { nuevaImg.style.setProperty('transform', 'scale(0.72)', 'important'); }
+                        else if (esZoge) { nuevaImg.style.setProperty('transform', 'scale(0.55)', 'important'); }
                         if (piezasCongeladas[coord]) {
                             nuevaImg.classList.add('pieza-congelada');
                         }
