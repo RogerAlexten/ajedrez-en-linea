@@ -505,6 +505,25 @@ button { padding: 10px 15px; font-size: 14px; border: none; border-radius: 5px; 
   border-color: #ffe100;
 }
 
+/* TEMA BANNER DIFÍCIL (escuadrón zombie): letras blancas, cuadro morado con brillo pulsante */
+@keyframes brilloMoradoDificil {
+  0%, 100% { box-shadow: 0 0 14px 4px rgba(170,0,255,0.7), 0 6px 15px rgba(0,0,0,0.6); }
+  50% { box-shadow: 0 0 26px 10px rgba(200,60,255,0.95), 0 6px 15px rgba(0,0,0,0.6); }
+}
+#level-banner-top.banner-dificil {
+  background: #5b0aa0;
+  border-color: #2e0050;
+  animation: brilloMoradoDificil 1.8s ease-in-out infinite;
+}
+#level-banner-top.banner-dificil #level-banner-title {
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #2e0050, -1px -1px 0 #2e0050, 1px -1px 0 #2e0050, -1px 1px 0 #2e0050, 0 0 8px #e0aaff;
+}
+#level-banner-top.banner-dificil #level-banner-icon-box {
+  border-color: #e0aaff;
+  box-shadow: 0 0 10px rgba(224,170,255,0.9);
+}
+
 /* RUTA Y NODOS DEL MAPA */
 .map-route-container {
   position: absolute;

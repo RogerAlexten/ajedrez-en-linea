@@ -5,33 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Battle Cats Chess RPG</title>
   <link href="style_bc.css" rel="stylesheet" type="text/css" />
-
-  <!-- ===== FIREBASE (Autenticación + Base de datos) — mismo proyecto que index.html ===== -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import {
-      getAuth, signOut, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-    import {
-      getFirestore, doc, getDoc, updateDoc, increment
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBA2bKVsxeYTdcYeMo_foOEcoZfcy46k7o",
-      authDomain: "ajedrez-en-linea-59b9f.firebaseapp.com",
-      projectId: "ajedrez-en-linea-59b9f",
-      storageBucket: "ajedrez-en-linea-59b9f.firebasestorage.app",
-      messagingSenderId: "785622879670",
-      appId: "1:785622879670:web:a956a54350c314da99c517",
-      measurementId: "G-HSN7C4VHPF"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    window.firebaseAuth = getAuth(app);
-    window.firebaseDb = getFirestore(app);
-    window.fb = { signOut, onAuthStateChanged, doc, getDoc, updateDoc, increment };
-    window.dispatchEvent(new Event('firebase-listo'));
-  </script>
   <style>
     /* RESALTADO DE TUTORIAL: borde rojo pulsante en la casilla/carta correcta */
     @keyframes pulsoTutorial {
@@ -1015,23 +988,6 @@
 <body class="theme-battlecats">
 
 <!-- ============================================================
-     PANTALLA DE PRECARGA (recursos + verificación de sesión)
-     Cubre todo hasta que termine de cargar imágenes/gifs/sonidos/música
-     y se confirme que hay una sesión iniciada.
-     ============================================================ -->
-<div id="preload-overlay-bc" style="position:fixed; inset:0; z-index:999999; background:#0a0a0f; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.4s ease; font-family:inherit;">
-  <img src="icono_gato_loading.png" onerror="this.style.display='none'" style="width:72px; height:72px; margin-bottom:18px; animation:preloadPulseBC 1s ease-in-out infinite;">
-  <p style="color:#ffc107; font-weight:900; font-size:16px; letter-spacing:1px; margin-bottom:14px;">CARGANDO BATTLE CATS CHESS...</p>
-  <div style="width:260px; max-width:70vw; height:14px; background:#222; border:2px solid #ffc107; border-radius:8px; overflow:hidden;">
-    <div id="preload-bar-fill-bc" style="width:0%; height:100%; background:linear-gradient(90deg,#ffc107,#ff8f00); transition:width 0.2s ease;"></div>
-  </div>
-  <p id="preload-porcentaje-bc" style="color:#ddd; font-size:12px; margin-top:10px; font-weight:bold;">0%</p>
-</div>
-<style>
-  @keyframes preloadPulseBC { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.08); opacity:0.85; } }
-</style>
-
-<!-- ============================================================
      ESCENARIO PRINCIPAL DEL LOBBY
      ============================================================ -->
 <div id="lobby-viewport">
@@ -1449,18 +1405,20 @@
         p: [ { name: "Crazed Tank", cost: 1, traits: ["RESISTANCE", "BASE_REPAIR", "SINGLE"], icons: ["resist_dorado.png", "single.png"], cardStyle: "transform: translateY(18px) scale(0.65) !important;" },
              { name: "Doggy", cost: 1, traits: ["SINGLE"], icons: ["single.png"], cardStyle: "transform: translateY(18px) scale(0.65) !important;" },
              { name: "Miku Perrito", cost: 1, traits: ["INVINCIBLE", "SINGLE"], icons: ["invincible_dorado.png", "single.png"], cardStyle: "transform: translateY(8px) scale(0.65) !important;" },
-             { name: "Relic Doge", cost: 1, traits: ["CURSE"], icons: ["curse_dorado.png"], image: "relic-doge.gif", cardStyle: "transform: translateY(18px) scale(0.65) !important;" } ],
+             { name: "Relic Doge", cost: 1, traits: ["CURSE"], icons: ["curse_dorado.png"], image: "relic-doge.gif", cardStyle: "transform: translateY(18px) scale(0.65) !important;" },
+             { name: "Zoge", cost: 1, traits: ["REVIVE", "BURROW"], icons: ["zombie.png", "burrow.png"], image: "zoge.gif", cardStyle: "transform: translateY(18px) scale(0.65) !important;" } ],
         n: [ { name: "Relic M. Ost", cost: 3, traits: ["CURSE", "KNOCKBACK", "SLOW", "SINGLE"], icons: ["curse_dorado.png", "kb.png", "slow_dorado.png", "single.png"], image: "battlecats-caballo-negro_alt.gif", cardStyle: "transform: translateY(66px) scale(1.15) !important;" },
              { name: "Kagamine Rin & Len", cost: 3, traits: ["KNOCKBACK", "RANGE"], icons: ["kb.png", "range.png"], image: "battlecats-caballo-negro_alt2.gif", cardStyle: "transform: translateY(26px) scale(1.15) !important;" },
              { name: "Oldstrich", cost: 3, traits: ["REVIVE", "BURROW", "TOXIC", "RANGE"], icons: ["zombie.png", "burrow.png", "toxico.png", "range.png"], image: "oldstrich.gif", cardStyle: "transform: translateY(55px) scale(1.15) !important;" },
              { name: "Devil Wife", cost: 3, traits: ["D_SURGE", "INSANE_DAMAGE"], icons: ["dsurge_dorado.png", "ins_massive.png"], image: "devil_wife.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" },
              { name: "Akku-Supervillain", cost: 3, traits: ["D_SHIELD", "MINI_WAVE"], icons: ["escudo_aku.png", "mini_wave_dorado.png"], image: "akku-supervillain.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" },
-             { name: "Oldhorn", cost: 3, traits: ["CURSE", "IMMUNE_SLOW", "IMMUNE_FREEZE", "IMMUNE_KNOCKBACK", "RANGE"], icons: ["curse_dorado.png", "imm_slow_dorado.png", "imm_freeze_dorado.png", "imm_knockback_dorado.png", "range.png"], image: "oldhorn.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" } ],
+             { name: "Oldhorn", cost: 3, traits: ["CURSE", "IMMUNE_SLOW", "IMMUNE_FREEZE", "IMMUNE_KNOCKBACK"], icons: ["curse_dorado.png", "imm_slow_dorado.png", "imm_freeze_dorado.png", "imm_knockback_dorado.png"], image: "oldhorn.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" } ],
         b: [ { name: "Caperucita Mina", cost: 4, traits: ["LD", "MASSIVE_DAMAGE", "IMMUNE_CURSE", "IMMUNE_TOXIC", "IMMUNE_WARP"], icons: ["ld.png", "massive.png", "imm_curse_dorado.png", "imm_toxic_dorado.png", "imm_warp_dorado.png"], cardStyle: "transform: translateY(54px) scale(1.15) !important;" },
              { name: "Sage of Logic Newton", cost: 4, traits: ["MINI_WAVE", "SLOW", "IMMUNE_SLOW", "IMMUNE_WAVE"], icons: ["mini_wave_dorado.png", "slow_dorado.png", "imm_slow_dorado.png", "imm_wave_dorado.png"], cardStyle: "transform: translateY(10px) scale(1.15) !important;" },
              { name: "Sage of Selection Darvin", cost: 4, traits: ["DELAY", "CURSE", "IMMUNE_CURSE", "RANGE"], icons: ["icon_delay.png", "curse_dorado.png", "imm_curse_dorado.png", "range.png"], image: "darvin.gif", cardStyle: "transform: translateY(10px) scale(1.15) !important;" },
              { name: "Hatsune Miku", cost: 4, traits: ["SLOW", "SURGE", "INSANE_DAMAGE"], icons: ["slow_dorado.png", "surge_dorado.png", "ins_massive.png"], image: "hatsune_miku.gif", cardStyle: "transform: translateY(26px) scale(1.15) !important;" },
-             { name: "Relic Yulala", cost: 4, traits: ["WARP", "CURSE", "IMMUNE_KNOCKBACK", "SINGLE", "RANGE"], icons: ["warp_dorado.png", "curse_dorado.png", "imm_knockback_dorado.png", "single.png", "range.png"], image: "battlecats-caballo-negro.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" } ],
+             { name: "Relic Yulala", cost: 4, traits: ["WARP", "CURSE", "IMMUNE_KNOCKBACK", "SINGLE"], icons: ["warp_dorado.png", "curse_dorado.png", "imm_knockback_dorado.png", "single.png"], image: "battlecats-caballo-negro.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
+             { name: "Zang Roo", cost: 4, traits: ["REVIVE", "BURROW", "RANGE"], icons: ["zombie.png", "burrow.png", "range.png"], image: "zang roo.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" } ],
         r: [ { name: "Dogumaru", cost: 5, traits: ["CURSE", "RANGE", "FREEZE", "IMMUNE_SURGE"], icons: ["curse_dorado.png", "range.png", "freeze_dorado.png", "imm_surge_dorado.png"], cardStyle: "transform: translateY(48px) scale(1.15) !important;" },
              { name: "Lord Gravely", cost: 5, traits: ["BURROW", "REVIVE", "ZOMBIE", "TOXIC", "RANGE", "SLOW"], icons: ["burrow.png", "zombie.png", "zombie_icon.png", "toxico.png", "range.png", "slow_dorado.png"], cardStyle: "transform: translateY(42px) scale(1.15) !important;" },
              { name: "Miku Miku", cost: 5, traits: ["FREEZE", "IMMUNE_FREEZE", "RANGE"], icons: ["freeze_dorado.png", "imm_freeze_dorado.png", "range.png"], cardStyle: "transform: translateY(32px) scale(1.15) !important;" },
@@ -1471,11 +1429,13 @@
              { name: "Possessed Empress", cost: 6, traits: ["SLOW", "WEAKEN", "MINI_WAVE", "RANGE", "IMMUNE_KNOCKBACK", "IMMUNE_WEAKEN", "D_SHIELD"], icons: ["slow_dorado.png", "weaken_dorado.png", "mini_wave_dorado.png", "range.png", "imm_knockback_dorado.png", "imm_weaken_dorado.png", "escudo_aku.png"], cardStyle: "transform: translateY(10px) scale(1.15) !important;" },
              { name: "Sakura Miku", cost: 6, traits: ["RANGE", "FREEZE", "IMMUNE_FREEZE", "IMMUNE_KNOCKBACK", "IMMUNE_SLOW", "IMMUNE_WEAKEN"], icons: ["range.png", "freeze_dorado.png", "imm_freeze_dorado.png", "imm_knockback_dorado.png", "imm_slow_dorado.png", "imm_weaken_dorado.png"], cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
              { name: "El Gran Dragón de la Tierra", cost: 6, traits: ["WEAKEN", "SURGE", "RANGE"], icons: ["weaken_dorado.png", "surge_dorado.png", "range.png"], image: "dragon-tierra.gif", cardStyle: "transform: translateY(15px) scale(1.15) !important;" },
-             { name: "Ultima Beast Naala", cost: 6, traits: ["CURSE", "LD", "FREEZE", "MASSIVE_DAMAGE", "IMMUNE_SURGE", "IMMUNE_TOXIC", "RANGE"], icons: ["curse_dorado.png", "ld.png", "freeze_dorado.png", "massive.png", "imm_surge_dorado.png", "imm_toxic_dorado.png", "range.png"], image: "ultima-beast-naala.gif", cardStyle: "transform: translateY(15px) scale(1.15) !important;" } ],
+             { name: "Ultima Beast Naala", cost: 6, traits: ["CURSE", "LD", "FREEZE", "MASSIVE_DAMAGE", "IMMUNE_SURGE", "IMMUNE_TOXIC"], icons: ["curse_dorado.png", "ld.png", "freeze_dorado.png", "massive.png", "imm_surge_dorado.png", "imm_toxic_dorado.png"], image: "ultima-beast-naala.gif", cardStyle: "transform: translateY(15px) scale(1.15) !important;" },
+             { name: "Dead Angel Z-onel", cost: 6, traits: ["FREEZE", "REVIVE", "RANGE"], icons: ["freeze_dorado.png", "zombie.png", "range.png"], image: "dead angel z-onel.gif", cardStyle: "transform: translateY(15px) scale(1.15) !important;" } ],
         k: [ { name: "Rey Demonio", cost: 8, traits: ["TOXIC_MASTER", "ANTI_JAQUE", "RANGE", "D_SHIELD", "BOSS"], icons: ["toxico.png", "range.png", "escudo_aku.png", "boss_dorado.png"], cardStyle: "transform: translateY(64px) scale(1.15) !important;" },
              { name: "El Capy", cost: 8, traits: ["SURGE", "RANGE", "IMMUNE_ALL", "SINGLE", "BOSS"], icons: ["surge_dorado.png", "range.png", "imm_knockback_dorado.png", "single.png", "boss_dorado.png"], cardStyle: "transform: translateY(52px) scale(1.15) !important;" },
              { name: "Yuki Miku", cost: 8, traits: ["WAVE", "FREEZE", "INSANE_RESISTANCE", "RANGE", "IMMUNE_ALL", "BOSS"], icons: ["oleada_dorada.png", "freeze_dorado.png", "insane_resist_dorado.png", "range.png", "imm_knockback_dorado.png", "boss_dorado.png"], cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
-             { name: "Primeval Cyclone", cost: 8, traits: ["INC_ATK", "CURSE", "IMMUNE_ALL", "BOSS", "RANGE"], icons: ["furia.png", "curse_dorado.png", "imm_knockback_dorado.png", "boss_dorado.png", "range.png"], image: "primeval-cyclone.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" } ]
+             { name: "Primeval Cyclone", cost: 8, traits: ["INC_ATK", "CURSE", "IMMUNE_ALL", "BOSS"], icons: ["furia.png", "curse_dorado.png", "imm_knockback_dorado.png", "boss_dorado.png"], image: "primeval-cyclone.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
+             { name: "Daboo of the Dead", cost: 8, traits: ["SLOW", "REVIVE", "IMMUNE_ALL", "RANGE", "BOSS"], icons: ["slow_dorado.png", "zombie.png", "imm_knockback_dorado.png", "range.png", "boss_dorado.png"], image: "daboo of the dead.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" } ]
       }
     };
 
@@ -1494,6 +1454,11 @@
     /* Índices del mazo fijo (NEGRAS) para el CRAZED BOSS: Doggy, Devil Wife, Sage of Selection Darvin, Akku Titan, Possessed Empress, Rey Demonio */
     const CRAZED_DECK_INDEX = {
       b: { p: 1, n: 3, b: 2, r: 4, q: 1, k: 0 }
+    };
+
+    /* Índices del mazo fijo (NEGRAS) para la DIFICULTAD DIFÍCIL (escuadrón zombie): Zoge, Oldstrich, Zang Roo, Lord Gravely, Dead Angel Z-onel, Daboo of the Dead */
+    const DIFICIL_DECK_INDEX = {
+      b: { p: 4, n: 2, b: 5, r: 1, q: 5, k: 4 }
     };
 
     /* PASOS DEL MODO TUTORIAL */
@@ -1679,8 +1644,6 @@
     
     let tipoBossActivo = 'normal'; 
     let modalMazoContexto = 'equipo'; // 'equipo' (solo ver mazo, sin botones) | 'nivel' (armar partida en Custom) | 'en-partida' (editar mazo sin salir de Sala de Pruebas)
-    let origenModalEquipo = 'dojo'; // Recuerda si el modal "Cambiar Equipo" se abrió desde 'dojo' o 'mapa', para volver al lugar correcto
-    let navegandoLobby = false; // Bloqueo anti-doble-click para las transiciones Dojo<->Mapa<->Partida
     let difBossActual = 'F'; 
 
     let equipoJugador = 'w', equipoSeleccionadoModal = 'w', juegoIniciado = false, botPensando = false;
@@ -2530,6 +2493,7 @@
         let esCrazed = (tipoBossActivo === 'crazed');
         let esCrazed2 = (tipoBossActivo === 'crazed2');
         let esExtrema = (tipoBossActivo === 'extrema');
+        let esDificil = (tipoBossActivo === 'normal' && difBossActual === 'D');
         let colorBot = equipoJugador === 'w' ? 'b' : 'w';
         
         ['p','n','b','r','q','k'].forEach(t => {
@@ -2539,6 +2503,8 @@
                 mazoRival[t] = MIKU_DECK_INDEX[colorBot][t];
             } else if (esCrazed) {
                 mazoRival[t] = CRAZED_DECK_INDEX[colorBot][t];
+            } else if (esDificil && DIFICIL_DECK_INDEX[colorBot]) {
+                mazoRival[t] = DIFICIL_DECK_INDEX[colorBot][t];
             } else {
                 let len = BATTLE_CATS_ROSTER[colorBot][t].length;
                 mazoRival[t] = Math.floor(Math.random() * len);
@@ -2687,216 +2653,24 @@
         }
     }
 
-    /* ===== SESIÓN CON FIREBASE (mismo usuario logeado en index.html) ===== */
-    let usuarioActivoUid = null;
-    let usuarioActivoBC = '';
-    let scoreUserRank = 0;
+    window.onload = () => {
+        let usuarioActivo = localStorage.getItem('bc_sesion_usuario');
+        if (!usuarioActivo) { window.location.href = 'index.html'; return; }
+        document.getElementById('caja-sesion-usuario').classList.remove('oculto');
+        document.getElementById('texto-usuario-actual').innerText = usuarioActivo;
 
-    function esperarFirebaseBC() {
-        return new Promise((resolve) => {
-            if (window.fb && window.firebaseAuth) { resolve(); return; }
-            window.addEventListener('firebase-listo', () => resolve(), { once: true });
-        });
-    }
-
-    // Puntuación User Rank
-    function actualizarUserRankUI() {
-      const el = document.getElementById('user-rank-score-text');
-      if (el) el.innerText = scoreUserRank;
-    }
-
-    async function sumarPuntosRank(pts) {
-      scoreUserRank += pts;
-      actualizarUserRankUI();
-      if (!usuarioActivoUid) return;
-      try {
-          const { doc, updateDoc, increment } = window.fb;
-          await updateDoc(doc(window.firebaseDb, 'usuarios', usuarioActivoUid), { puntuacionBattlecats: increment(pts) });
-      } catch (e) { console.error('No se pudo guardar el puntaje de Battle Cats:', e.code, e.message); }
-    }
-
-    /* ===== ADMINISTRADOR (MODO PRUEBA) =====
-       Solo el usuario "Alexten22" (con la contraseña "sistema2") puede ver y usar el Modo Prueba. */
-    const ADMIN_USUARIO_BC = 'Alexten22';
-    const ADMIN_CLAVE_BC = 'sistema2';
-    function esAdminBC() {
-      return usuarioActivoBC === ADMIN_USUARIO_BC;
-    }
-    function verificarAccesoAdminBC() {
-      if (!esAdminBC()) {
-        alert('El Modo Prueba está reservado para el administrador.');
-        return false;
-      }
-      const clave = prompt('Contraseña de administrador:');
-      if (clave !== ADMIN_CLAVE_BC) {
-        alert('Contraseña incorrecta. Acceso denegado.');
-        return false;
-      }
-      return true;
-    }
-
-    /* ===== PUNTOS SEGÚN EL MODO =====
-       Fácil / Normal / Difícil / Custom: 1 punto por pieza comida, 100 por victoria.
-       Akkus / Miku / Relic: 2 puntos por pieza comida, 150 por victoria.
-       Modo Prueba (admin): no otorga puntos. */
-    function esModoDobleRecompensa() {
-      return tipoBossActivo === 'crazed' || tipoBossActivo === 'crazed2' || tipoBossActivo === 'extrema';
-    }
-    function puntosPorPiezaActual() {
-      return esModoDobleRecompensa() ? 2 : 1;
-    }
-    function puntosPorVictoriaActual() {
-      return esModoDobleRecompensa() ? 150 : 100;
-    }
-
-    /* ============================================================
-       SISTEMA DE PRECARGA DE RECURSOS (imágenes, gifs, sonidos, música)
-       Recorre el propio HTML/JS buscando cualquier archivo de imagen o
-       audio referenciado y lo precarga en memoria ANTES de dejar jugar,
-       para evitar retrasos de animación con internet lento.
-       ============================================================ */
-    function extraerListaAssetsBC() {
-      const encontrados = new Set();
-      try {
-        const html = document.documentElement.outerHTML;
-        const regex = /["']([^"'<>\s]+\.(?:png|jpe?g|gif|webp|mp3|wav|ogg|mp4))["']/gi;
-        let m;
-        while ((m = regex.exec(html)) !== null) {
-          let ruta = m[1].trim();
-          if (!ruta || ruta.startsWith('http') || ruta.startsWith('data:')) continue;
-          encontrados.add(ruta);
-        }
-      } catch (eScanHtml) { console.log('No se pudo escanear el HTML para precarga:', eScanHtml); }
-
-      // Refuerzo: recorrer el roster completo de personajes por si algún nombre se arma dinámicamente
-      try {
-        ['w', 'b'].forEach(color => {
-          for (let tipo in BATTLE_CATS_ROSTER[color]) {
-            BATTLE_CATS_ROSTER[color][tipo].forEach((char, idx) => {
-              const img = char.image || (typeof getArchivoPiezaModal === 'function' ? getArchivoPiezaModal(tipo, color, idx) : null);
-              if (img) encontrados.add(img);
-            });
-          }
-        });
-      } catch (eRoster) { console.log('No se pudo recolectar imágenes del roster para precarga:', eRoster); }
-
-      // Refuerzo: pistas de música de fondo, que se arman dinámicamente como `${pista}.mp3` / `${pista}2.mp3`
-      try {
-        const pistasBase = ['facil', 'medio', 'dificil', 'tutorial', 'crazedboss', 'crazedbossdos', 'extrema', 'custom', 'pruebas'];
-        pistasBase.forEach((p) => { encontrados.add(`${p}.mp3`); encontrados.add(`${p}2.mp3`); });
-      } catch (ePistas) { console.log('No se pudo agregar las pistas de música para precarga:', ePistas); }
-
-      return Array.from(encontrados);
-    }
-
-    function actualizarBarraPrecargaBC(cargados, total) {
-      const pct = total > 0 ? Math.round((cargados / total) * 100) : 100;
-      const barra = document.getElementById('preload-bar-fill-bc');
-      const texto = document.getElementById('preload-porcentaje-bc');
-      if (barra) barra.style.width = pct + '%';
-      if (texto) texto.innerText = `${pct}% (${cargados}/${total})`;
-    }
-
-    function precargarRecursosBC() {
-      return new Promise((resolve) => {
-        const lista = extraerListaAssetsBC();
-        const total = lista.length;
-        if (total === 0) { actualizarBarraPrecargaBC(1, 1); resolve(); return; }
-
-        let cargados = 0, resuelto = false;
-        function marcarUno() {
-          cargados++;
-          actualizarBarraPrecargaBC(cargados, total);
-          if (cargados >= total && !resuelto) { resuelto = true; resolve(); }
-        }
-
-        lista.forEach((ruta) => {
-          let yaContado = false;
-          function marcarUnaVez() { if (yaContado) return; yaContado = true; marcarUno(); }
-
-          if (/\.(mp3|wav|ogg|mp4)$/i.test(ruta)) {
-            const a = new Audio();
-            a.preload = 'auto';
-            a.oncanplaythrough = marcarUnaVez;
-            a.onloadeddata = marcarUnaVez; // se resuelve más rápido que canplaythrough en conexiones lentas
-            a.onerror = marcarUnaVez;
-            a.src = ruta;
-            try { a.load(); } catch (eLoadAudio) { marcarUnaVez(); }
-            // La música (sobre todo variantes "2" que a veces ni existen) sí tiene un límite corto,
-            // para no retrasar el juego por un archivo opcional.
-            setTimeout(marcarUnaVez, 8000);
-          } else {
-            // Las imágenes y gifs SIEMPRE esperan a terminar de verdad (onload real) para que no
-            // se vean cortados/lentos al usarlos en el juego, aunque la precarga tarde un poco más.
-            const img = new Image();
-            img.onload = marcarUnaVez;
-            img.onerror = marcarUnaVez;
-            img.src = ruta;
-          }
-        });
-
-        // Salvavidas general: última red de seguridad para no bloquear el juego indefinidamente
-        // (solo actúa si de verdad algo se quedó colgado; en condiciones normales no llega a usarse).
-        setTimeout(() => { if (!resuelto) { resuelto = true; resolve(); } }, 60000);
-      });
-    }
-
-    function ocultarPantallaPrecargaBC() {
-      const overlay = document.getElementById('preload-overlay-bc');
-      if (overlay) {
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.remove(), 400);
-      }
-    }
-
-    function mostrarMensajeRequiereCuentaBC() {
-      const overlay = document.getElementById('preload-overlay-bc');
-      if (!overlay) { window.location.href = 'index.html'; return; }
-      overlay.innerHTML = `
-        <div style="text-align:center; padding: 20px; max-width: 80vw;">
-          <p style="color:#ff5555; font-size: 18px; font-weight:900; margin-bottom: 14px;">NECESITAS UNA CUENTA PARA JUGAR ESTE MODO</p>
-          <p style="color:#ddd; font-size: 14px;">Serás redirigido para iniciar sesión...</p>
-        </div>`;
-      setTimeout(() => { window.location.href = 'index.html'; }, 1800);
-    }
-
-    window.onload = async () => {
-        // La precarga de recursos arranca de inmediato, en paralelo con la verificación de sesión
-        const listoAssets = precargarRecursosBC();
-
-        await esperarFirebaseBC();
-        const { onAuthStateChanged, doc, getDoc } = window.fb;
-
-        onAuthStateChanged(window.firebaseAuth, async (user) => {
-            if (!user) { mostrarMensajeRequiereCuentaBC(); return; }
-
-            usuarioActivoUid = user.uid;
-            let snap = await getDoc(doc(window.firebaseDb, 'usuarios', user.uid));
-            let datos = snap.exists() ? snap.data() : { usuario: user.email.split('@')[0], puntuacionBattlecats: 0 };
-            usuarioActivoBC = datos.usuario;
-            scoreUserRank = datos.puntuacionBattlecats || 0;
-
-            document.getElementById('caja-sesion-usuario').classList.remove('oculto');
-            document.getElementById('texto-usuario-actual').innerText = usuarioActivoBC;
-            actualizarUserRankUI();
-
-            document.getElementById('vol-slider').value = 20; changingVolume();
-            renderBots(); renderTemas(); renderEfectosUI();
-            inicializarTablero();
-            cargarTableroBattleCats();
-            actualizarTablero();
-            actualizarVistaModalDeck();
-            document.getElementById('modal-reglas-bc').classList.add('oculto');
-
-            await listoAssets; // espera a que terminen de precargarse imágenes/gifs/sonidos/música
-            ocultarPantallaPrecargaBC();
-        });
+        document.getElementById('vol-slider').value = 20; changingVolume(); 
+        renderBots(); renderTemas(); renderEfectosUI(); 
+        inicializarTablero();
+        cargarTableroBattleCats(); 
+        actualizarTablero();     
+        actualizarVistaModalDeck();
+        document.getElementById('modal-reglas-bc').classList.add('oculto');
     };
 
     function cerrarSesionBC() {
-        esperarFirebaseBC()
-            .then(() => window.fb.signOut(window.firebaseAuth))
-            .then(() => window.location.href = 'index.html');
+        localStorage.removeItem('bc_sesion_usuario');
+        window.location.href = 'index.html';
     }
 
 
@@ -2913,7 +2687,7 @@
     const MAP_LEVELS = [
       { id: 'F', name: 'FÁCIL', x: 14, y: 68 },
       { id: 'M', name: 'NORMAL', x: 26, y: 62 },
-      { id: 'D', name: 'DIFÍCIL', x: 38, y: 57 },
+      { id: 'D', name: 'DIFÍCIL', x: 38, y: 57, icon: 'daboo of the dead.gif', temaBanner: 'banner-dificil' },
       { id: 'crazed', name: 'AKKUS', x: 48, y: 44, icon: 'akku-titan.gif', temaBanner: 'banner-akkus' },
       { id: 'crazed2', name: 'HATSUNE MIKU', x: 58, y: 53, icon: 'hatsune_miku.gif' },
       { id: 'extrema', name: 'RELIC', x: 68, y: 47, icon: 'relic-doge.gif' },
@@ -2925,7 +2699,47 @@
     let currentLevelIndex = 0;
     let stateLobbyLocation = 'dojo'; // 'dojo', 'mapa', 'juego'
 
-    /* ===== PUNTUACIÓN POR USUARIO: ahora se guarda en Firestore, ver sumarPuntosRank más arriba ===== */
+    /* ===== PUNTUACIÓN POR USUARIO (corrige el bug del puntaje global) ===== */
+    function obtenerRankingBattleCats() {
+      return JSON.parse(localStorage.getItem('ranking_battlecats') || '{}');
+    }
+    function guardarPuntuacionBattleCats(usuario, puntos) {
+      let ranking = obtenerRankingBattleCats();
+      ranking[usuario] = puntos;
+      localStorage.setItem('ranking_battlecats', JSON.stringify(ranking));
+    }
+
+    let usuarioActivoBC = localStorage.getItem('bc_sesion_usuario') || '';
+    let scoreUserRank = obtenerRankingBattleCats()[usuarioActivoBC] || 0;
+
+    // Migración única: el puntaje viejo era global (bug). Se asigna una sola vez
+    // al usuario que estaba activo al aplicar esta corrección y luego se elimina.
+    (function migrarPuntajeGlobalAntiguo() {
+      let antiguo = localStorage.getItem('bc_user_rank_puntos');
+      if (antiguo !== null) {
+        if (usuarioActivoBC) {
+          let ranking = obtenerRankingBattleCats();
+          if (ranking[usuarioActivoBC] === undefined) {
+            ranking[usuarioActivoBC] = parseInt(antiguo, 10) || 0;
+            localStorage.setItem('ranking_battlecats', JSON.stringify(ranking));
+            scoreUserRank = ranking[usuarioActivoBC];
+          }
+        }
+        localStorage.removeItem('bc_user_rank_puntos');
+      }
+    })();
+
+    // Puntuación User Rank
+    function actualizarUserRankUI() {
+      const el = document.getElementById('user-rank-score-text');
+      if (el) el.innerText = scoreUserRank;
+    }
+
+    function sumarPuntosRank(pts) {
+      scoreUserRank += pts;
+      guardarPuntuacionBattleCats(usuarioActivoBC, scoreUserRank);
+      actualizarUserRankUI();
+    }
 
     // Rotación de los 3 mensajes del cuadro del Dojo
     function rotarMensajeDojo() {
@@ -2940,8 +2754,6 @@
 
       for (let i = 0; i < MAP_LEVELS.length; i++) {
         const lvl = MAP_LEVELS[i];
-        const ocultoAdmin = (lvl.id === 'prueba' && !esAdminBC());
-        if (ocultoAdmin) continue; // El Modo Prueba solo es visible para el administrador
 
         const redNode = document.createElement('div');
         redNode.className = 'map-node-red';
@@ -2952,22 +2764,15 @@
 
         if (i < MAP_LEVELS.length - 1) {
           const nextLvl = MAP_LEVELS[i + 1];
-          const nextOcultoAdmin = (nextLvl.id === 'prueba' && !esAdminBC());
-          if (!nextOcultoAdmin) {
-            const steps = 5;
-            for (let s = 1; s < steps; s++) {
-              const dot = document.createElement('div');
-              dot.className = 'map-dot-white';
-              dot.style.left = (lvl.x + (nextLvl.x - lvl.x) * (s / steps)) + '%';
-              dot.style.top = (lvl.y + (nextLvl.y - lvl.y) * (s / steps)) + '%';
-              holder.appendChild(dot);
-            }
+          const steps = 5;
+          for (let s = 1; s < steps; s++) {
+            const dot = document.createElement('div');
+            dot.className = 'map-dot-white';
+            dot.style.left = (lvl.x + (nextLvl.x - lvl.x) * (s / steps)) + '%';
+            dot.style.top = (lvl.y + (nextLvl.y - lvl.y) * (s / steps)) + '%';
+            holder.appendChild(dot);
           }
         }
-      }
-      // Si el nivel actualmente seleccionado es el Modo Prueba y el usuario no es admin, reubicar la selección
-      if (MAP_LEVELS[currentLevelIndex] && MAP_LEVELS[currentLevelIndex].id === 'prueba' && !esAdminBC()) {
-        currentLevelIndex = 0;
       }
       actualizarPosicionGatoMapa();
     }
@@ -2981,7 +2786,7 @@
       const banner = document.getElementById('level-banner-top');
       const iconoBox = document.getElementById('level-banner-icon-box');
       const icono = document.getElementById('level-banner-icon');
-      banner.classList.remove('banner-akkus');
+      banner.classList.remove('banner-akkus', 'banner-dificil');
       if (lvl.temaBanner) banner.classList.add(lvl.temaBanner);
 
       if (lvl.icon) {
@@ -3009,20 +2814,13 @@
 
     // Mueve al gato de punto rojo en punto rojo con las flechas izquierda/derecha
     function cambiarNivelSeleccionado(delta) {
-      let nuevoIndex = currentLevelIndex + delta;
+      const nuevoIndex = currentLevelIndex + delta;
       if (nuevoIndex < 0 || nuevoIndex >= MAP_LEVELS.length) return;
-      // Saltar el Modo Prueba si el usuario no es el administrador
-      if (MAP_LEVELS[nuevoIndex].id === 'prueba' && !esAdminBC()) {
-        nuevoIndex += delta;
-        if (nuevoIndex < 0 || nuevoIndex >= MAP_LEVELS.length) return;
-      }
       seleccionarNivelMapa(nuevoIndex);
     }
 
     // ANIMACIÓN: DOJO -> MAPA (1 segundo total: 0.5s gato+mensaje, 0.5s puertas)
     function animarTransicionAMapa() {
-      if (navegandoLobby) return; // evita solapar esta animación si el usuario hace click varias veces seguidas
-      navegandoLobby = true;
       reproducirClic();
 
       // FASE 1 (0s -> 0.5s): el gato y el cuadro de mensaje bajan juntos, y los botones se apartan
@@ -3045,14 +2843,11 @@
         document.getElementById('dojo-ui-layer').style.pointerEvents = 'none';
         stateLobbyLocation = 'mapa';
         renderizarRutaMapa();
-        navegandoLobby = false;
       }, 500);
     }
 
     // ANIMACIÓN: MAPA -> DOJO (segura de llamar en cualquier estado, es idempotente)
     function regresarADojo() {
-      if (navegandoLobby) return; // evita solapar esta animación si el usuario hace click varias veces seguidas
-      navegandoLobby = true;
       reproducirClic();
 
       // 1. Cerrar puertas
@@ -3075,7 +2870,6 @@
         document.getElementById('hitbox-equipo-dojo').classList.remove('anim-btn-salir');
         document.getElementById('layer-btn-equipo').classList.remove('anim-btn-salir');
         stateLobbyLocation = 'dojo';
-        navegandoLobby = false;
       }, 500);
     }
 
@@ -3120,13 +2914,8 @@
 
     // CONFIRMAR E INICIAR NIVEL (aplica el boss/dificultad elegido en el mapa)
     function confirmarEIniciarNivel() {
-      if (navegandoLobby) return; // evita solapar esta transición si el usuario hace click varias veces seguidas
-      const lvl = MAP_LEVELS[currentLevelIndex];
-
-      if (lvl.id === 'prueba' && !verificarAccesoAdminBC()) { return; }
-
-      navegandoLobby = true;
       reproducirClic();
+      const lvl = MAP_LEVELS[currentLevelIndex];
 
       modoTutorial = false;
       botAutoPruebaActivo = false;
@@ -3168,7 +2957,6 @@
           stateLobbyLocation = 'juego';
           abrirVista('modal-reglas-bc');
           actualizarVistaModalDeck();
-          navegandoLobby = false;
         }, 700);
         return;
       }
@@ -3184,7 +2972,6 @@
         document.getElementById('lobby-viewport').style.background = 'transparent';
         document.getElementById('lobby-stage').style.background = 'transparent';
         empezarJuego();
-        navegandoLobby = false;
 
         // Reabrimos las puertas para revelar el tablero detrás
         requestAnimationFrame(() => {
@@ -3222,7 +3009,6 @@
     function abrirModalEquipWhiteOnly() {
       reproducirClic();
       modalMazoContexto = 'equipo';
-      origenModalEquipo = stateLobbyLocation; // recordamos si veníamos del Dojo o del Mapa
       setEquipoModal('w');
       abrirVista('modal-reglas-bc');
       actualizarVistaModalDeck();
@@ -3249,18 +3035,11 @@
       actualizarVistaModalDeck();
     }
 
-    // Vuelve del selector de mazo/equipo al Dojo o al Mapa, según desde donde se abrió, sin iniciar partida
+    // Vuelve del selector de mazo/equipo al Dojo sin iniciar partida
     function volverAlDojoDesdeDeck() {
       reproducirClic();
       cerrarVistas();
       document.getElementById('lobby-viewport').classList.remove('oculto');
-
-      if (modalMazoContexto === 'equipo' && origenModalEquipo === 'mapa') {
-        // El modal se abrió estando en el Mapa: el Mapa nunca se ocultó detrás del modal,
-        // así que basta con cerrarlo y quedarnos ahí, sin disparar la animación Mapa->Dojo.
-        stateLobbyLocation = 'mapa';
-        return;
-      }
       regresarADojo();
     }
 
@@ -3299,15 +3078,13 @@
     }
 
     // ============ INTEGRACIÓN DEL SISTEMA DE PUNTOS (RANKING) ============
-    // Fácil/Normal/Difícil/Custom: +1 por pieza comida, +100 por victoria.
-    // Akkus/Miku/Relic: +2 por pieza comida, +150 por victoria.
-    // Modo Prueba (admin): no otorga puntos.
+    // +1 punto cuando TÚ capturas una pieza rival, +100 puntos si ganas la partida.
     const originalLimpiarEstadosCapturaLobby = limpiarEstadosPorCaptura;
     limpiarEstadosPorCaptura = function(coord) {
       try {
         const piezaCapturadora = juego.get(coord);
-        if (piezaCapturadora && piezaCapturadora.color === equipoJugador && tipoBossActivo !== 'prueba') {
-          sumarPuntosRank(puntosPorPiezaActual());
+        if (piezaCapturadora && piezaCapturadora.color === equipoJugador) {
+          sumarPuntosRank(1);
         }
       } catch (eScoreCap) {
         console.log('No se pudo evaluar puntos por captura:', eScoreCap);
@@ -3317,8 +3094,8 @@
 
     const originalLockGameResultLobby = lockGame;
     lockGame = function(resultado, razon) {
-      if (resultado === 'victoria' && tipoBossActivo !== 'prueba') {
-        sumarPuntosRank(puntosPorVictoriaActual());
+      if (resultado === 'victoria') {
+        sumarPuntosRank(100);
       }
       if (typeof originalLockGameResultLobby === 'function') originalLockGameResultLobby(resultado, razon);
     };
@@ -3645,11 +3422,10 @@
             <strong style="color: #ffae00; display: block; margin-bottom: 2px; font-size: 13px;">DIFICULTAD EXTREMA</strong>
             <span style="font-size: 11px; color: #ddd; font-weight: bold;">MAZO: <span style="color:#ffc107;">RELICS/AKKU (FIJO)</span></span>
         </div>
-        ${esAdminBC() ? `
         <div class="item-lista ${tipoBossActivo === 'prueba' && !modoTutorial ? 'activo' : ''}" style="padding: 8px 10px; cursor: pointer; border: 2px solid #17a2b8; background-color: #111; margin-top: 6px;" onclick="seleccionarSalaPruebas()">
-            <strong style="color: #17a2b8; display: block; margin-bottom: 2px; font-size: 13px;">SALA DE PRUEBAS (ADMIN)</strong>
+            <strong style="color: #17a2b8; display: block; margin-bottom: 2px; font-size: 13px;">SALA DE PRUEBAS</strong>
             <span style="font-size: 11px; color: #ddd; font-weight: bold;">MODO: <span style="color:#ffc107;">SIN BOTS (2 JUG.)</span></span>
-        </div>` : ''}`;
+        </div>`;
         document.getElementById('lista-bots').innerHTML = html;
     }
 
@@ -3726,7 +3502,6 @@
 
     function seleccionarSalaPruebas() {
         reproducirClic();
-        if (!verificarAccesoAdminBC()) return;
         tipoBossActivo = 'prueba';
         modoTutorial = false;
         botAutoPruebaActivo = false;
@@ -4428,6 +4203,7 @@
         let movsSeguros = movs.filter(move => {
             if (move.piece === 'k' && reyOculto[colorActor]) return false; // el Rey oculto no puede moverse por sí mismo
             if (piezasCongeladas[move.from]) return false; 
+            if (piezasEnterradas[move.from]) return false; // BUGFIX: una pieza ENTERRADA (burrow) no puede moverse hasta emerger, ni siquiera el bot
             if (piezasRalentizadas[move.from]) {
                 const fOrg = move.from.charCodeAt(0);
                 const rOrg = parseInt(move.from[1]);
@@ -4984,7 +4760,7 @@
       let danoBaseReal = danoBase || 50;
       if (cargas === 1) {
         let extraTox = Math.round(danoBaseReal * 1.15);
-        if (colorAtacante === 'w') HP_ENEMIGO = Math.max(0, HP_ENEMIGO - extraTox);
+        if (colorAtacante === equipoJugador) HP_ENEMIGO = Math.max(0, HP_ENEMIGO - extraTox);
         else HP_ALIADO = Math.max(0, HP_ALIADO - extraTox);
         mostrarDanioFlotante(colorObjetivo, extraTox);
         actualizarBarrasHP();
@@ -4992,7 +4768,7 @@
         historialDiv.scrollTop = historialDiv.scrollHeight;
       } else if (cargas >= 2) {
         let extraTox = Math.round(danoBaseReal * 1.50);
-        if (colorAtacante === 'w') HP_ENEMIGO = Math.max(0, HP_ENEMIGO - extraTox);
+        if (colorAtacante === equipoJugador) HP_ENEMIGO = Math.max(0, HP_ENEMIGO - extraTox);
         else HP_ALIADO = Math.max(0, HP_ALIADO - extraTox);
         mostrarDanioFlotante(colorObjetivo, extraTox);
         actualizarBarrasHP();
@@ -5395,7 +5171,7 @@
               historialDiv.innerHTML += `<p style="color:#8e24aa; font-weight:bold;">¡[${zInfo.origName || zInfo.origType}] intenta resucitar pero la casilla está ocupada por [${pInvData.name}]! Queda como cadáver bloqueante.</p>`;
               // Daño colateral a la base por impacto
               let dChoc = 75;
-              if (invasor.color === 'w') HP_ALIADO = Math.max(0, HP_ALIADO - dChoc);
+              if (invasor.color === equipoJugador) HP_ALIADO = Math.max(0, HP_ALIADO - dChoc);
               else HP_ENEMIGO = Math.max(0, HP_ENEMIGO - dChoc);
               mostrarDanioFlotante(invasor.color, dChoc);
               actualizarBarrasHP();
