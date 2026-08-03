@@ -1423,7 +1423,7 @@
              { name: "Doggy", cost: 1, traits: ["SINGLE"], icons: ["single.png"], cardStyle: "transform: translateY(16px) scale(0.45) !important;" },
              { name: "Miku Perrito", cost: 1, traits: ["INVINCIBLE", "SINGLE"], icons: ["invincible_dorado.png", "single.png"], cardStyle: "transform: translateY(8px) scale(0.65) !important;" },
              { name: "Relic Doge", cost: 1, traits: ["CURSE"], icons: ["curse_dorado.png"], image: "relic-doge.gif", cardStyle: "transform: translateY(18px) scale(0.65) !important;" },
-             { name: "Zoge", cost: 1, traits: ["REVIVE", "BURROW"], icons: ["zombie.png", "burrow.png"], image: "zoge.gif", cardStyle: "transform: translateY(18px) scale(0.65) !important;" } ],
+             { name: "Zoge", cost: 1, traits: ["REVIVE", "BURROW"], icons: ["zombie.png", "burrow.png"], image: "zoge.gif", cardStyle: "transform: translateY(18px) scale(0.45) !important;" } ],
         n: [ { name: "Relic M. Ost", cost: 3, traits: ["CURSE", "KNOCKBACK", "SLOW", "SINGLE"], icons: ["curse_dorado.png", "kb.png", "slow_dorado.png", "single.png"], image: "battlecats-caballo-negro_alt.gif", cardStyle: "transform: translateY(66px) scale(1.15) !important;" },
              { name: "Kagamine Rin & Len", cost: 3, traits: ["KNOCKBACK", "RANGE"], icons: ["kb.png", "range.png"], image: "battlecats-caballo-negro_alt2.gif", cardStyle: "transform: translateY(26px) scale(0.75) !important;" },
              { name: "Oldstrich", cost: 3, traits: ["REVIVE", "BURROW", "TOXIC", "RANGE"], icons: ["zombie.png", "burrow.png", "toxico.png", "range.png"], image: "oldstrich.gif", cardStyle: "transform: translateY(55px) scale(1.15) !important;" },
