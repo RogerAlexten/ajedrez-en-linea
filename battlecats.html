@@ -5,6 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Battle Cats Chess RPG</title>
   <link href="style_bc.css" rel="stylesheet" type="text/css" />
+
+  <!-- ===== FIREBASE (misma app que index.html) — necesario para guardar el puntaje global de Battle Cats ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, increment
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBA2bKVsxeYTdcYeMo_foOEcoZfcy46k7o",
+      authDomain: "ajedrez-en-linea-59b9f.firebaseapp.com",
+      projectId: "ajedrez-en-linea-59b9f",
+      storageBucket: "ajedrez-en-linea-59b9f.firebasestorage.app",
+      messagingSenderId: "785622879670",
+      appId: "1:785622879670:web:a956a54350c314da99c517",
+      measurementId: "G-HSN7C4VHPF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.firebaseAuth = getAuth(app);
+    window.firebaseDb = getFirestore(app);
+    window.fb = { doc, getDoc, updateDoc, increment };
+
+    // uid del usuario logeado, para poder actualizar su documento en Firestore
+    window.bcUid = null;
+    window.bcAuthListoBC = false;
+    onAuthStateChanged(window.firebaseAuth, (user) => {
+      window.bcUid = user ? user.uid : null;
+      window.bcAuthListoBC = true;
+      window.dispatchEvent(new Event('firebase-auth-listo-bc'));
+    });
+
+    window.dispatchEvent(new Event('firebase-listo-bc'));
+  </script>
   <style>
     /* RESALTADO DE TUTORIAL: borde rojo pulsante en la casilla/carta correcta */
     @keyframes pulsoTutorial {
@@ -1460,7 +1495,7 @@
              { name: "Lord Gravely", cost: 5, traits: ["BURROW", "REVIVE", "ZOMBIE", "TOXIC", "RANGE", "SLOW"], icons: ["burrow.png", "zombie.png", "zombie_icon.png", "toxico.png", "range.png", "slow_dorado.png"], cardStyle: "transform: translateY(42px) scale(1.15) !important;" },
              { name: "Relic Master Uril", cost: 5, traits: ["RANGE", "SLOW", "CURSE", "IMMUNE_KNOCKBACK", "IMMUNE_SURGE"], icons: ["range.png", "slow_dorado.png", "curse_dorado.png", "imm_knockback_dorado.png", "imm_surge_dorado.png"], image: "relic master uril.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
              { name: "goku", cost: 5, traits: ["DELAY","WAVE", "RESISTANCE", "MASSIVE_DAMAGE", "IMMUNE_KNOCKBACK", "IMMUNE_SLOW", "IMMUNE_WARP", "IMMUNE_TOXIC", "IMMUNE_WEAKEN", "IMMUNE_FREEZE", "IMMUNE_CURSE"], icons: ["icon_delay.png", "oleada_dorada.png", "resist_dorado.png", "massive.png", "imm_knockback_dorado.png", "imm_slow_dorado.png", "imm_warp_dorado.png", "imm_toxic_dorado.png", "imm_weaken_dorado.png", "imm_freeze_dorado.png", "imm_curse_dorado.png"], image: "goku.gif", cardStyle: "transform: translateY(55px) scale(1.15) !important;" },
-             { name: "Miku Miku", cost: 5, traits: ["FREEZE", "IMMUNE_FREEZE", "RANGE"], icons: ["freeze_dorado.png", "imm_freeze_dorado.png", "range.png"], cardStyle: "transform: translateY(32px) scale(1.15) !important;" },
+             { name: "Miku Miku", cost: 5, traits: ["FREEZE", "IMMUNE_FREEZE", "RANGE"], icons: ["freeze_dorado.png", "imm_freeze_dorado.png", "range.png"], image: "battlecatsalt2.gif", cardStyle: "transform: translateY(32px) scale(1.15) !important;" },
              { name: "Lutrinae Gokurakko", cost: 5, traits: ["KNOCKBACK", "C_SURGE", "RANGE"], icons: ["kb.png", "csurge_dorado.png", "range.png"], image: "Lutrinae_torre.gif", cardStyle: "transform: translateY(20px) scale(1.15) !important;" },
              { name: "Akku Titan", cost: 5, traits: ["C_SURGE", "D_SHIELD", "CRIT_STRIKE"], icons: ["csurge_dorado.png", "escudo_aku.png", "critx2_dorado.png"], image: "akku-titan.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" },
              { name: "Othom", cost: 5, traits: ["CURSE", "RANGE", "IMMUNE_SURGE", "IMMUNE_WAVE"], icons: ["curse_dorado.png", "range.png", "imm_surge_dorado.png", "imm_wave_dorado.png"], image: "othom.gif", cardStyle: "transform: translateY(30px) scale(1.15) !important;" } ],
@@ -1481,7 +1516,7 @@
     /* Índices del mazo de la colab Miku dentro de BATTLE_CATS_ROSTER, usados como mazo fijo del CRAZED BOSS 2 */
     const MIKU_DECK_INDEX = {
       w: { p: 2, n: 2, b: 2, r: 3, q: 2, k: 3 },
-      b: { p: 2, n: 2, b: 3, r: 3, q: 2, k: 2 }
+      b: { p: 2, n: 2, b: 3, r: 4, q: 2, k: 2 }
     };
     const MIKU_COLLAB_NAMES = ["Miku Perrito", "Miku Cat", "Kagamine Rin & Len", "Meiko & Cat", "Hatsune Miku", "Miku CC Osaka", "Miku Miku", "Megurine Luka", "Sakura Miku", "Miku CC Tokyo", "Yuki Miku", "Kaito & Cat"];
 
@@ -2464,7 +2499,14 @@
 
         let grupoSelectorEquipo = document.getElementById('grupo-selector-equipo-mazo');
         if (grupoSelectorEquipo) {
-            grupoSelectorEquipo.style.display = (modalMazoContexto === 'equipo') ? 'none' : '';
+            // El toggle BLANCAS/NEGRAS solo debe verse al elegir bando ANTES de empezar
+            // (contexto 'nivel') o en Sala de Pruebas (donde de verdad hay 2 mazos, uno
+            // por bando). En Modo Custom, cambiar de mazo A MITAD DE PARTIDA (contexto
+            // 'en-partida') con el bando ya fijo NO debe mostrar este toggle: si se tocaba,
+            // "mazoSeleccionado" terminaba guardando un índice pensado para el roster del
+            // OTRO color, y al volver a tu bando real el juego mostraba piezas equivocadas.
+            let mostrarSelectorEquipo = (modalMazoContexto === 'nivel') || (tipoBossActivo === 'prueba');
+            grupoSelectorEquipo.style.display = mostrarSelectorEquipo ? '' : 'none';
         }
         let btnComenzarMazo = document.getElementById('btn-comenzar-mazo');
         if (btnComenzarMazo) {
@@ -2897,6 +2939,27 @@
       scoreUserRank += pts;
       guardarPuntuacionBattleCats(usuarioActivoBC, scoreUserRank);
       actualizarUserRankUI();
+      sumarPuntosBattleCatsGlobal(pts);
+    }
+
+    // Guarda el puntaje también en Firestore (campo puntuacionBattlecats), que es
+    // lo que lee el ranking global de index.html. Antes esto solo se guardaba en
+    // localStorage y por eso nunca aparecía en la puntuación global.
+    async function sumarPuntosBattleCatsGlobal(pts) {
+      if (!pts) return;
+      try {
+        await esperarFirebaseBC();
+        if (!window.bcUid) return; // no hay sesión de Firebase activa
+        const { doc, updateDoc, increment } = window.fb;
+        await updateDoc(doc(window.firebaseDb, 'usuarios', window.bcUid), { puntuacionBattlecats: increment(pts) });
+      } catch (e) { console.log('No se pudo guardar el puntaje global de Battle Cats:', e); }
+    }
+
+    function esperarFirebaseBC() {
+      return new Promise((resolve) => {
+        if (window.bcAuthListoBC) { resolve(); return; }
+        window.addEventListener('firebase-auth-listo-bc', () => resolve(), { once: true });
+      });
     }
 
     // Rotación de los 3 mensajes del cuadro del Dojo
@@ -3185,10 +3248,17 @@
       }
     }
 
-    // CAMBIAR MAZO EN PARTIDA (icono equipo.png) - exclusivo de Sala de Pruebas,
+    // CAMBIAR MAZO EN PARTIDA (icono equipo.png) - disponible en Sala de Pruebas y Modo Custom,
     // abre el panel de mazo sin reiniciar la partida ni salir al Dojo.
     function abrirCambioMazoEnPartida() {
       modalMazoContexto = 'en-partida';
+      // Fuera de Sala de Pruebas el bando ya está fijo (no se puede cambiar a mitad de
+      // partida), así que forzamos el selector a mostrar SIEMPRE tu propio mazo real.
+      if (tipoBossActivo !== 'prueba') {
+        equipoSeleccionadoModal = equipoJugador;
+        document.getElementById('btn-sel-w').style.borderColor = equipoJugador === 'w' ? '#ffc107' : '#555';
+        document.getElementById('btn-sel-b').style.borderColor = equipoJugador === 'b' ? '#ffc107' : '#555';
+      }
       abrirVista('modal-reglas-bc');
       actualizarVistaModalDeck();
     }
@@ -3198,12 +3268,17 @@
       reproducirClic();
       cerrarVistas();
       document.getElementById('lobby-viewport').classList.remove('oculto');
-      // Si ya estábamos en el Mapa (p.ej. se abrió el selector de equipo desde ahí),
-      // nos quedamos en el Mapa en vez de forzar la transición de vuelta al Dojo.
-      if (stateLobbyLocation === 'mapa') {
+      // Si ya estábamos en el Mapa (p.ej. se abrió el selector de equipo desde ahí), o si
+      // se estaba cancelando la elección de mazo del MODO CUSTOM (que siempre se abre
+      // desde el Mapa y cierra las puertas al entrar), volvemos al Mapa reabriendo las
+      // puertas, en vez de forzar la transición de vuelta al Dojo.
+      if (stateLobbyLocation === 'mapa' || (modalMazoContexto === 'nivel' && tipoBossActivo === 'custom')) {
+        document.getElementById('door-left-box').classList.add('puerta-abierta-izq');
+        document.getElementById('door-right-box').classList.add('puerta-abierta-der');
         document.getElementById('map-screen-bg').classList.remove('oculto');
         document.getElementById('dojo-ui-layer').style.opacity = '0';
         document.getElementById('dojo-ui-layer').style.pointerEvents = 'none';
+        stateLobbyLocation = 'mapa';
       } else {
         regresarADojo();
       }
