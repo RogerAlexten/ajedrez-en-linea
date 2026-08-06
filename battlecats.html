@@ -1438,7 +1438,7 @@
       { id: "IMMUNE_WEAKEN", name: "Inmune: Debilitar", icon: "imm_weaken_dorado.png", desc: "Ignora la reducción de daño de Weaken." },
       { id: "CRIT_STRIKE", name: "Golpe Crítico (x2)", icon: "critx2_dorado.png", desc: "Tiene 10% de probabilidad de infligir el doble (x2) de daño al atacar o capturar." },
       { id: "WAVE_STOP", name: "Muro de Oleada", icon: "wavestop_dorado.png", desc: "Si una Oleada llega a su casilla, la detiene por completo y evita que siga avanzando." },
-      { id: "EXPLOSION", name: "Explosión", icon: "explosion.png", desc: "Al capturar una pieza, golpea las 3 casillas AL FRENTE del personaje (no encima suyo): la de enfrente al instante y las 2 diagonales de al lado a mitad de la animación. Daña la barra de HP rival, no elimina piezas." },
+      { id: "EXPLOSION", name: "Explosión", icon: "explosion.png", desc: "Al capturar una pieza, golpea las 3 casillas AL FRENTE del personaje (no encima suyo): la de enfrente al instante y de nuevo al terminar la animación, y las 2 diagonales de al lado a mitad de la animación. Daña la barra de HP rival, no elimina piezas." },
       { id: "IMMUNE_EXPLOSION", name: "Inmune: Explosión", icon: "imm_explosion_dorado.png", desc: "Ignora el daño de las Explosiones." }
     ];
     const BATTLE_CATS_ROSTER = {
@@ -1522,12 +1522,12 @@
 
     /* Índices del mazo fijo (NEGRAS) para la DIFICULTAD EXTREMA: Relic Doge, Oldhorn, Relic Yulala, Othom, Ultima-Beast-Naala, Primeval Cyclone */
     const EXTREMA_DECK_INDEX = {
-      b: { p: 3, n: 6, b: 4, r: 6, q: 4, k: 3 }
+      b: { p: 3, n: 6, b: 4, r: 7, q: 4, k: 3 }
     };
 
     /* Índices del mazo fijo (NEGRAS) para el CRAZED BOSS: Doggy, Devil Wife, Sage of Selection Darvin, Akku Titan, Possessed Empress, Rey Demonio */
     const CRAZED_DECK_INDEX = {
-      b: { p: 1, n: 4, b: 2, r: 5, q: 1, k: 0 }
+      b: { p: 1, n: 4, b: 2, r: 6, q: 1, k: 0 }
     };
 
     /* Índices del mazo fijo (NEGRAS) para la DIFICULTAD DIFÍCIL (escuadrón zombie): Zoge, Oldstrich, Zang Roo, Lord Gravely, Dead Angel Z-onel, Daboo of the Dead */
@@ -5740,64 +5740,75 @@
         if (pTarget) pData = BATTLE_CATS_ROSTER[pTarget.color][pTarget.type][(pTarget.color === equipoJugador ? mazoSeleccionado : mazoRival)[pTarget.type]];
         let traitsDef = obtenerTraitsActivos(pData, sq);
 
-        if (piezasEnterradas[sq]) {
-            mostrarEfectoInmune(sq, "¡INTOCABLE!");
-            return;
-        }
-        if (traitsDef.includes("IMMUNE_ALL") || traitsDef.includes("IMMUNE_SURGE")) {
-            mostrarEfectoInmune(sq, "¡INMUNE!");
-            return;
-        }
-
-        let esContraSurge = traitsDef.includes("C_SURGE");
-
-        historialDiv.innerHTML += `<p style="color:#ff9800; font-weight:bold;">¡[${pAtacanteName}] conjura un VOLCÁN (Surge) en ${sq.toUpperCase()}!</p>`;
-        historialDiv.scrollTop = historialDiv.scrollHeight;
-
-        let danoBase = aplicarModificadorAtaque(50, traitsAtacante, sqOrigen);
-
-        let gifSurge = document.createElement('img');
-        gifSurge.src = 'surge.gif?' + new Date().getTime();
-        gifSurge.className = 'surge-gif-overlay';
-        gifSurge.onerror = function() { this.style.display='none'; };
-        casillaDiv.appendChild(gifSurge);
-
-        let sonVolcan = sonidoSurge.cloneNode();
-        sonVolcan.volume = document.getElementById('vol-slider').value / 100;
-        sonVolcan.play().catch(e=>console.log(e));
-
-        function aplicarImpactoSurge() {
-            let piezaActual = juego.get(sq);
-            if (piezaActual && piezaActual.color !== colorAtacante) {
-                // El objetivo golpeado es siempre el bando contrario al atacante.
-                let sonGolpe = (colorAtacante === equipoJugador) ? sonidoCapturaEnemiga.cloneNode() : sonidoCapturaAliada.cloneNode();
-                sonGolpe.volume = document.getElementById('vol-slider').value / 100;
-                sonGolpe.play().catch(e=>console.log(e));
-
-                let d = calcularDanoRecibido(danoBase, pData, sq);
-                if (colorAtacante === equipoJugador) HP_ENEMIGO = Math.max(0, HP_ENEMIGO - d);
-                else HP_ALIADO = Math.max(0, HP_ALIADO - d);
-                mostrarDanioFlotante(piezaActual.color, d);
-                actualizarBarrasHP();
+        // Se pausa el juego (encolarAnimacion) durante TODO el Surge -incluyendo el posible
+        // reflejo de CONTRA SURGE-, para que no se puedan mover piezas a mitad de la animación.
+        // Si el objetivo es inmune, también se pausa brevemente hasta que termine ese aviso.
+        encolarAnimacion((done) => {
+            if (piezasEnterradas[sq]) {
+                mostrarEfectoInmune(sq, "¡INTOCABLE!");
+                setTimeout(done, 900);
+                return;
             }
-        }
+            if (traitsDef.includes("IMMUNE_ALL") || traitsDef.includes("IMMUNE_SURGE")) {
+                mostrarEfectoInmune(sq, "¡INMUNE!");
+                setTimeout(done, 900);
+                return;
+            }
 
-        aplicarImpactoSurge();
+            let esContraSurge = traitsDef.includes("C_SURGE");
 
-        setTimeout(() => {
+            historialDiv.innerHTML += `<p style="color:#ff9800; font-weight:bold;">¡[${pAtacanteName}] conjura un VOLCÁN (Surge) en ${sq.toUpperCase()}!</p>`;
+            historialDiv.scrollTop = historialDiv.scrollHeight;
+
+            let danoBase = aplicarModificadorAtaque(50, traitsAtacante, sqOrigen);
+
+            let gifSurge = document.createElement('img');
+            gifSurge.src = 'surge.gif?' + new Date().getTime();
+            gifSurge.className = 'surge-gif-overlay';
+            gifSurge.onerror = function() { this.style.display='none'; };
+            casillaDiv.appendChild(gifSurge);
+
+            let sonVolcan = sonidoSurge.cloneNode();
+            sonVolcan.volume = document.getElementById('vol-slider').value / 100;
+            sonVolcan.play().catch(e=>console.log(e));
+
+            function aplicarImpactoSurge() {
+                let piezaActual = juego.get(sq);
+                if (piezaActual && piezaActual.color !== colorAtacante) {
+                    // El objetivo golpeado es siempre el bando contrario al atacante.
+                    let sonGolpe = (colorAtacante === equipoJugador) ? sonidoCapturaEnemiga.cloneNode() : sonidoCapturaAliada.cloneNode();
+                    sonGolpe.volume = document.getElementById('vol-slider').value / 100;
+                    sonGolpe.play().catch(e=>console.log(e));
+
+                    let d = calcularDanoRecibido(danoBase, pData, sq);
+                    if (colorAtacante === equipoJugador) HP_ENEMIGO = Math.max(0, HP_ENEMIGO - d);
+                    else HP_ALIADO = Math.max(0, HP_ALIADO - d);
+                    mostrarDanioFlotante(piezaActual.color, d);
+                    actualizarBarrasHP();
+                }
+            }
+
             aplicarImpactoSurge();
-        }, 1000);
 
-        setTimeout(() => {
-            if (gifSurge && gifSurge.parentNode) gifSurge.remove();
-            verificarFinDeJuegoHP();
+            setTimeout(() => {
+                aplicarImpactoSurge();
+            }, 1000);
 
-            // Si el objetivo tiene CONTRA SURGE: después de recibir el golpe normal como cualquier pieza,
-            // activa su animación propia y refleja el mismo Volcán de vuelta hacia quien lo lanzó.
-            if (esContraSurge && !partidaTerminada) {
-                activarContraSurge(sq, sqOrigen, colorAtacante, traitsDef, pData ? pData.name : "Pieza");
-            }
-        }, 1880);
+            setTimeout(() => {
+                if (gifSurge && gifSurge.parentNode) gifSurge.remove();
+                verificarFinDeJuegoHP();
+
+                // Si el objetivo tiene CONTRA SURGE: después de recibir el golpe normal como cualquier pieza,
+                // activa su animación propia y refleja el mismo Volcán de vuelta hacia quien lo lanzó.
+                // Se dispara ANTES de llamar a done(): como activarContraSurge también usa encolarAnimacion,
+                // el contador de animaciones activas no llega a 0 entre medio y el juego sigue pausado
+                // hasta que el reflejo termine por completo.
+                if (esContraSurge && !partidaTerminada) {
+                    activarContraSurge(sq, sqOrigen, colorAtacante, traitsDef, pData ? pData.name : "Pieza");
+                }
+                done();
+            }, 1880);
+        });
     }
     function ejecutarSurge(sqOrigen, colorAtacante, traitsAtacante, pAtacanteName) { executingSurge(sqOrigen, colorAtacante, traitsAtacante, pAtacanteName); }
 
@@ -6399,26 +6410,10 @@
         };
     }
 
-    /* Reproduce el gif+sonido de explosión en una casilla concreta y, si hay una pieza enemiga ahí,
-       le aplica el daño a la barra de HP del bando rival (NO la elimina ni la captura del tablero)
-       y además le contagia los efectos de estado que tenga el atacante (FREEZE, SLOW, CURSE, WEAKEN, etc). */
-    function golpearCasillaExplosion(sq, enemyColor, colorAtacante, traitsAtacante) {
+    /* Aplica solo el daño/efectos de estado de la EXPLOSIÓN en una casilla, SIN crear una animación
+       nueva (se usa para el segundo golpe de la casilla central, que reaprovecha el gif ya en curso). */
+    function aplicarDanioExplosionCasilla(sq, enemyColor, colorAtacante, traitsAtacante) {
       try {
-        const DURACION_EXPLOSION_GIF = 1680;
-        let casillaDiv = document.getElementById(sq);
-        if (casillaDiv) {
-            let gifExp = document.createElement('img');
-            gifExp.src = 'explosion.gif?' + new Date().getTime();
-            gifExp.className = 'canon-gif-overlay';
-            gifExp.onerror = function() { this.style.display = 'none'; };
-            casillaDiv.appendChild(gifExp);
-            setTimeout(() => { if (gifExp && gifExp.parentNode) gifExp.remove(); }, DURACION_EXPLOSION_GIF);
-
-            let sonExp = sonidoExplosion.cloneNode();
-            sonExp.volume = document.getElementById('vol-slider').value / 100;
-            sonExp.play().catch(e => console.log(e));
-        }
-
         const p = juego.get(sq);
         if (p && p.color === enemyColor) {
             const pData = BATTLE_CATS_ROSTER[p.color][p.type][(p.color === equipoJugador ? mazoSeleccionado : mazoRival)[p.type]];
@@ -6445,6 +6440,32 @@
                 if (traitsAtacante.includes("KNOCKBACK")) ejecutarKnockbackPieza(sq, p.color, colorAtacante);
             }
         }
+      } catch (eSegundoGolpeExplosion) {
+        console.error(`Error al procesar el segundo golpe de EXPLOSIÓN en ${sq}:`, eSegundoGolpeExplosion);
+      }
+    }
+
+    /* Reproduce el gif+sonido de explosión en una casilla concreta y, si hay una pieza enemiga ahí,
+       le aplica el daño a la barra de HP del bando rival (NO la elimina ni la captura del tablero)
+       y además le contagia los efectos de estado que tenga el atacante (FREEZE, SLOW, CURSE, WEAKEN, etc). */
+    function golpearCasillaExplosion(sq, enemyColor, colorAtacante, traitsAtacante) {
+      try {
+        const DURACION_EXPLOSION_GIF = 1680;
+        let casillaDiv = document.getElementById(sq);
+        if (casillaDiv) {
+            let gifExp = document.createElement('img');
+            gifExp.src = 'explosion.gif?' + new Date().getTime();
+            gifExp.className = 'canon-gif-overlay';
+            gifExp.onerror = function() { this.style.display = 'none'; };
+            casillaDiv.appendChild(gifExp);
+            setTimeout(() => { if (gifExp && gifExp.parentNode) gifExp.remove(); }, DURACION_EXPLOSION_GIF);
+
+            let sonExp = sonidoExplosion.cloneNode();
+            sonExp.volume = document.getElementById('vol-slider').value / 100;
+            sonExp.play().catch(e => console.log(e));
+        }
+
+        aplicarDanioExplosionCasilla(sq, enemyColor, colorAtacante, traitsAtacante);
       } catch (eCasillaExplosion) {
         console.error(`Error al procesar la casilla ${sq} de la EXPLOSIÓN (partida NO se congela):`, eCasillaExplosion);
       }
@@ -6453,6 +6474,7 @@
     function activarExplosion(pieceSq, colorAtacante, nombreAtacante, traitsAtacante) {
       try {
         const MITAD_EXPLOSION = 840;
+        const DURACION_EXPLOSION_GIF = 1680;
         const enemyColor = colorAtacante === 'w' ? 'b' : 'w';
         const frente = obtenerCasillasFrenteExplosion(pieceSq, colorAtacante);
         if (!frente.centro && !frente.izquierda && !frente.derecha) return;
@@ -6461,7 +6483,7 @@
         historialDiv.innerHTML += `<p style="color:#ff6f00; font-weight:900;">¡[${nombreAtacante}] provoca una EXPLOSIÓN al frente!</p>`;
         historialDiv.scrollTop = historialDiv.scrollHeight;
 
-        // 1) Golpe instantáneo en la casilla justo al frente (centro)
+        // 1) Golpe instantáneo en la casilla justo al frente (centro), al EMPEZAR la animación
         if (frente.centro) golpearCasillaExplosion(frente.centro, enemyColor, colorAtacante, traitsAtacante);
 
         // 2) A la mitad de la animación, golpea las 2 casillas diagonales de al lado
@@ -6469,6 +6491,12 @@
             if (frente.izquierda) golpearCasillaExplosion(frente.izquierda, enemyColor, colorAtacante, traitsAtacante);
             if (frente.derecha) golpearCasillaExplosion(frente.derecha, enemyColor, colorAtacante, traitsAtacante);
         }, MITAD_EXPLOSION);
+
+        // 3) Segundo golpe -SOLO en la casilla central-, al TERMINAR la animación, igual que
+        //    hace el Volcán (Surge): reutiliza el gif que ya está reproduciéndose, sin crear uno nuevo.
+        setTimeout(() => {
+            if (frente.centro) aplicarDanioExplosionCasilla(frente.centro, enemyColor, colorAtacante, traitsAtacante);
+        }, DURACION_EXPLOSION_GIF);
       } catch (eExplosion) {
         console.error("Error crítico al activar EXPLOSIÓN (partida NO se congela):", eExplosion);
       }
